@@ -843,7 +843,7 @@ export function AnimatedAIChat() {
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ duration: 0.3 }}
                                             className={cn(
-                                                "flex gap-3 max-w-[85%] items-end",
+                                                "flex gap-3 max-w-[85%] items-start",
                                                 msg.role === 'user' ? "ml-auto flex-row-reverse" : "mr-auto"
                                             )}
                                         >
@@ -860,10 +860,10 @@ export function AnimatedAIChat() {
                                                 )}
                                             </div>
                                             <div className={cn(
-                                                "px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm",
+                                                "text-sm leading-relaxed",
                                                 msg.role === 'user'
-                                                    ? "bg-gradient-to-r from-violet-600/15 to-indigo-600/15 border border-violet-500/25 text-white/90 rounded-br-sm"
-                                                    : "bg-white/[0.03] border border-white/[0.05] text-white/95 rounded-tl-sm"
+                                                    ? "px-4 py-2.5 rounded-2xl bg-gradient-to-r from-violet-600/15 to-indigo-600/15 border border-violet-500/25 text-white/90 rounded-br-sm shadow-sm"
+                                                    : "bg-transparent border-none text-white/95 py-1 px-0 shadow-none"
                                             )}>
                                                 <ReactMarkdown 
                                                     remarkPlugins={[remarkGfm]}
@@ -889,13 +889,13 @@ export function AnimatedAIChat() {
                                                                  </a>
                                                              );
                                                          },
-                                                         p: ({ node, ...props }) => <p className="mb-2 last:mb-0 leading-relaxed" {...props} />,
-                                                         h1: ({ node, ...props }) => <h1 className="text-lg font-bold mt-3 mb-1 first:mt-0 text-white" {...props} />,
-                                                         h2: ({ node, ...props }) => <h2 className="text-md font-bold mt-2 mb-1 first:mt-0 text-white" {...props} />,
-                                                         h3: ({ node, ...props }) => <h3 className="text-sm font-bold mt-2 mb-1 first:mt-0 text-white" {...props} />,
-                                                         ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />,
-                                                         ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
-                                                         li: ({ node, ...props }) => <li className="text-white/80" {...props} />,
+                                                         p: ({ node, ...props }) => <p className="mb-4 last:mb-0 leading-[1.7] text-[15px] text-white/90 font-sans font-normal tracking-wide" {...props} />,
+                                                         h1: ({ node, ...props }) => <h1 className="text-2xl font-semibold font-serif text-white mt-6 mb-3 first:mt-0 leading-tight" {...props} />,
+                                                         h2: ({ node, ...props }) => <h2 className="text-xl font-semibold font-serif text-white/95 mt-5 mb-2.5 first:mt-0 leading-tight" {...props} />,
+                                                         h3: ({ node, ...props }) => <h3 className="text-lg font-medium font-serif text-white/90 mt-4 mb-2 first:mt-0 leading-tight" {...props} />,
+                                                         ul: ({ node, ...props }) => <ul className="list-disc pl-6 mb-4 space-y-2 text-white/80" {...props} />,
+                                                         ol: ({ node, ...props }) => <ol className="list-decimal pl-6 mb-4 space-y-2 text-white/80" {...props} />,
+                                                         li: ({ node, ...props }) => <li className="text-[15px] leading-[1.7] text-white/85 font-sans" {...props} />,
                                                          strong: ({ node, ...props }) => <strong className="font-semibold text-white" {...props} />,
                                                          table: ({ node, ...props }) => (
                                                              <div className="overflow-x-auto my-3 rounded-lg border border-white/10 bg-white/[0.01]">
@@ -985,7 +985,7 @@ export function AnimatedAIChat() {
                                             transition={{ duration: 0.25 }}
                                             className="flex flex-col w-full"
                                         >
-                                            <div className="flex gap-3 max-w-[85%] items-end mr-auto">
+                                            <div className="flex gap-3 max-w-[85%] items-start mr-auto">
                                                 <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 border text-[10px] font-semibold bg-white/[0.05] border-white/10 text-white/60">
                                                     <span>SBB</span>
                                                 </div>
