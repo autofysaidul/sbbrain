@@ -20,7 +20,10 @@ import {
     Check,
     ThumbsUp,
     ThumbsDown,
-    RotateCw
+    RotateCw,
+    Sun,
+    Moon,
+    Clock
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as React from "react"
@@ -32,6 +35,7 @@ interface ChatMessage {
     timestamp: string;
     role: "user" | "assistant";
     content: string;
+    responseTime?: number; // seconds it took to get this response
 }
 
 interface Session {
@@ -277,6 +281,67 @@ export function AnimatedAIChat() {
     // Feedback & Copy Utility States
     const [ratings, setRatings] = useState<Record<string, 'like' | 'dislike'>>({});
     const [copiedId, setCopiedId] = useState<string | null>(null);
+
+    // Theme state (follows system preference by default)
+    const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+    // Response timer state
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
+    const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const sendTimestampRef = useRef<number>(0);
+
+    // Initialize theme from system preference or localStorage
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const stored = localStorage.getItem('dazzling_faraday_theme') as 'dark' | 'light' | null;
+        if (stored) {
+            setTheme(stored);
+            document.documentElement.setAttribute('data-theme', stored);
+        } else {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const systemTheme = prefersDark ? 'dark' : 'light';
+            setTheme(systemTheme);
+            document.documentElement.setAttribute('data-theme', systemTheme);
+        }
+
+        // Listen for system preference changes
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handler = (e: MediaQueryListEvent) => {
+            if (!localStorage.getItem('dazzling_faraday_theme')) {
+                const newTheme = e.matches ? 'dark' : 'light';
+                setTheme(newTheme);
+                document.documentElement.setAttribute('data-theme', newTheme);
+            }
+        };
+        mediaQuery.addEventListener('change', handler);
+        return () => mediaQuery.removeEventListener('change', handler);
+    }, []);
+
+    const toggleTheme = () => {
+        const newTheme = theme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('dazzling_faraday_theme', newTheme);
+    };
+
+    // Start/stop live timer for response
+    const startTimer = () => {
+        sendTimestampRef.current = Date.now();
+        setElapsedSeconds(0);
+        timerIntervalRef.current = setInterval(() => {
+            setElapsedSeconds(Math.floor((Date.now() - sendTimestampRef.current) / 1000));
+        }, 1000);
+    };
+
+    const stopTimer = (): number => {
+        if (timerIntervalRef.current) {
+            clearInterval(timerIntervalRef.current);
+            timerIntervalRef.current = null;
+        }
+        const elapsed = (Date.now() - sendTimestampRef.current) / 1000;
+        setElapsedSeconds(0);
+        return Math.round(elapsed * 10) / 10; // round to 1 decimal
+    };
 
     const commandSuggestions: CommandSuggestion[] = [
         { 
@@ -674,6 +739,7 @@ export function AnimatedAIChat() {
             };
             setMessages(prev => [...prev, tempUserMsg]);
             setIsTyping(true);
+            startTimer();
 
             startTransition(async () => {
                 try {
@@ -689,6 +755,8 @@ export function AnimatedAIChat() {
                         }),
                     });
 
+                    const responseTime = stopTimer();
+
                     if (response.ok) {
                         const data = await response.json();
                         if (data.reply) {
@@ -698,7 +766,7 @@ export function AnimatedAIChat() {
                                 return [
                                     ...listWithoutTemp,
                                     { ...tempUserMsg, id: `msg-user-${Date.now()}` },
-                                    data.reply
+                                    { ...data.reply, responseTime }
                                 ];
                             });
                         }
@@ -715,6 +783,7 @@ export function AnimatedAIChat() {
                         ]);
                     }
                 } catch (error) {
+                    stopTimer();
                     console.error("Error sending message:", error);
                     setMessages(prev => [
                         ...prev,
@@ -792,6 +861,7 @@ export function AnimatedAIChat() {
         // Truncate messages in local state from this assistant message onwards
         setMessages(prev => prev.slice(0, index));
         setIsTyping(true);
+        startTimer();
 
         startTransition(async () => {
             try {
@@ -809,10 +879,12 @@ export function AnimatedAIChat() {
                     }),
                 });
 
+                const responseTime = stopTimer();
+
                 if (response.ok) {
                     const data = await response.json();
                     if (data.reply) {
-                        setMessages(prev => [...prev, data.reply]);
+                        setMessages(prev => [...prev, { ...data.reply, responseTime }]);
                     }
                 } else {
                     setMessages(prev => [
@@ -826,6 +898,7 @@ export function AnimatedAIChat() {
                     ]);
                 }
             } catch (error) {
+                stopTimer();
                 console.error("Error regenerating response:", error);
                 setMessages(prev => [
                     ...prev,
@@ -843,7 +916,7 @@ export function AnimatedAIChat() {
     };
 
     return (
-        <div className="flex h-screen w-screen bg-[#0A0A0B] text-white overflow-hidden relative">
+        <div className="flex h-screen w-screen overflow-hidden relative transition-colors duration-300" style={{ background: 'var(--chat-bg)', color: 'var(--chat-text)' }}>
             
             {/* 1. COLLAPSIBLE SIDEBAR */}
             <AnimatePresence initial={false}>
@@ -853,17 +926,19 @@ export function AnimatedAIChat() {
                         animate={{ width: 260, opacity: 1 }}
                         exit={{ width: 0, opacity: 0 }}
                         transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="h-full bg-black/45 border-r border-white/[0.04] flex flex-col shrink-0 z-40 overflow-hidden relative backdrop-blur-2xl"
+                        className="h-full flex flex-col shrink-0 z-40 overflow-hidden relative backdrop-blur-2xl transition-colors duration-300"
+                        style={{ background: 'var(--sidebar-bg)', borderRight: '1px solid var(--sidebar-border)' }}
                     >
                         {/* Sidebar Header */}
-                        <div className="p-4 flex items-center justify-between border-b border-white/[0.04]">
+                        <div className="p-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
                             <div className="flex items-center gap-2">
                                 <Sparkles className="w-5 h-5 text-violet-400 animate-pulse" />
-                                <span className="font-semibold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">SB Brain</span>
+                                <span className="font-semibold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-violet-400">SB Brain</span>
                             </div>
                             <button 
                                 onClick={() => setIsSidebarOpen(false)}
-                                className="p-1 hover:bg-white/[0.05] rounded-md text-white/50 hover:text-white transition-colors"
+                                className="p-1 rounded-md transition-colors"
+                                style={{ color: 'var(--chat-text-muted)' }}
                             >
                                 <ChevronLeft className="w-4 h-4" />
                             </button>
@@ -873,9 +948,14 @@ export function AnimatedAIChat() {
                         <div className="p-3">
                             <button
                                 onClick={handleCreateSession}
-                                className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.05] hover:border-white/10 text-sm font-medium transition-all duration-200"
+                                className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-sm font-medium transition-all duration-200"
+                                style={{ 
+                                    background: 'var(--btn-secondary-bg)',
+                                    border: '1px solid var(--btn-secondary-border)',
+                                    color: 'var(--btn-secondary-text)'
+                                }}
                             >
-                                <PlusIcon className="w-4 h-4 text-violet-400" />
+                                <PlusIcon className="w-4 h-4" style={{ color: 'var(--accent)' }} />
                                 <span>New Chat</span>
                             </button>
                         </div>
@@ -891,9 +971,14 @@ export function AnimatedAIChat() {
                                         className={cn(
                                             "group flex items-center justify-between px-3 py-2 rounded-xl text-xs cursor-pointer transition-all duration-200",
                                             activeSessionId === session.id
-                                                ? "bg-white/[0.05] border border-white/10 text-white font-medium"
-                                                : "text-white/60 border border-transparent hover:bg-white/[0.02] hover:text-white/90"
+                                                ? "font-medium"
+                                                : "border-transparent"
                                         )}
+                                        style={
+                                            activeSessionId === session.id 
+                                                ? { background: 'var(--sidebar-hover)', border: '1px solid var(--sidebar-border)', color: 'var(--chat-text)' }
+                                                : { color: 'var(--chat-text-secondary)', border: '1px solid transparent' }
+                                        }
                                     >
                                         <div className="flex items-center gap-2 overflow-hidden mr-2">
                                             <div className={cn(
@@ -914,9 +999,9 @@ export function AnimatedAIChat() {
                             </div>
 
                             {/* Coming Soon / Upcoming Section */}
-                            <div className="pt-2 border-t border-white/[0.03]">
-                                <div className="text-[10px] font-semibold text-white/30 uppercase tracking-widest px-2.5 mb-2.5 flex items-center gap-1.5">
-                                    <span className="w-1 h-1 rounded-full bg-violet-400 animate-ping" />
+                            <div className="pt-2" style={{ borderTop: '1px solid var(--sidebar-border)' }}>
+                                <div className="text-[10px] font-semibold uppercase tracking-widest px-2.5 mb-2.5 flex items-center gap-1.5" style={{ color: 'var(--chat-text-muted)' }}>
+                                    <span className="w-1 h-1 rounded-full animate-ping" style={{ background: 'var(--accent)' }} />
                                     Coming Soon
                                 </div>
                                 <div className="space-y-0.5">
@@ -948,12 +1033,13 @@ export function AnimatedAIChat() {
             <div className="flex-1 flex flex-col relative overflow-hidden h-full">
                 
                 {/* Claude-style top header */}
-                <div className="h-14 border-b border-white/[0.04] flex items-center justify-between px-6 bg-transparent shrink-0 z-20 w-full">
-                    <div className="flex items-center gap-3 text-xs text-white/40 font-sans">
+                <div className="h-14 flex items-center justify-between px-6 bg-transparent shrink-0 z-20 w-full" style={{ borderBottom: '1px solid var(--header-border)' }}>
+                    <div className="flex items-center gap-3 text-xs font-sans" style={{ color: 'var(--chat-text-muted)' }}>
                         {!isSidebarOpen && (
                             <button
                                 onClick={() => setIsSidebarOpen(true)}
-                                className="p-1.5 hover:bg-white/[0.05] text-white/70 hover:text-white rounded-lg transition-colors mr-1"
+                                className="p-1.5 rounded-lg transition-colors mr-1"
+                                style={{ color: 'var(--chat-text-secondary)' }}
                                 title="Expand Sidebar"
                             >
                                 <Menu className="w-4 h-4" />
@@ -961,7 +1047,7 @@ export function AnimatedAIChat() {
                         )}
                         <span>Books & Workshop</span>
                         <span>/</span>
-                        <span className="text-white/80 font-medium truncate max-w-[180px] sm:max-w-[280px]">
+                        <span className="font-medium truncate max-w-[180px] sm:max-w-[280px]" style={{ color: 'var(--chat-text)' }}>
                             {sharedParentId 
                                 ? "Shared Chat (Preview)" 
                                 : (sessions.find(s => s.id === activeSessionId)?.title || "Supercommunicators chapter structure and breakdown")
@@ -970,9 +1056,18 @@ export function AnimatedAIChat() {
                         <span className="text-[10px] opacity-60">▼</span>
                     </div>
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={toggleTheme}
+                            className="p-1.5 rounded-lg transition-colors"
+                            style={{ color: 'var(--chat-text-secondary)', background: 'var(--btn-secondary-bg)', border: '1px solid var(--btn-secondary-border)' }}
+                            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                        >
+                            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                        </button>
                         <button 
                             onClick={handleShare}
-                            className="px-3 py-1 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.05] rounded-lg text-xs text-white/70 hover:text-white transition-colors"
+                            className="px-3 py-1 rounded-lg text-xs transition-colors"
+                            style={{ background: 'var(--btn-secondary-bg)', border: '1px solid var(--btn-secondary-border)', color: 'var(--btn-secondary-text)' }}
                         >
                             {shareCopied ? "Copied!" : "Share"}
                         </button>
@@ -980,10 +1075,10 @@ export function AnimatedAIChat() {
                 </div>
 
                 {/* Aesthetic background glow lights */}
-                <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
-                    <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full mix-blend-normal filter blur-[128px] animate-pulse" />
-                    <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full mix-blend-normal filter blur-[128px] animate-pulse delay-700" />
-                    <div className="absolute top-1/4 right-1/3 w-64 h-64 bg-fuchsia-500/10 rounded-full mix-blend-normal filter blur-[96px] animate-pulse delay-1000" />
+                <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none opacity-50">
+                    <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full mix-blend-normal filter blur-[128px] animate-pulse" style={{ background: 'var(--glow-1)' }} />
+                    <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full mix-blend-normal filter blur-[128px] animate-pulse delay-700" style={{ background: 'var(--glow-2)' }} />
+                    <div className="absolute top-1/4 right-1/3 w-64 h-64 rounded-full mix-blend-normal filter blur-[96px] animate-pulse delay-1000" style={{ background: 'var(--glow-3)' }} />
                 </div>
 
                 {/* Primary Chat Box Wrapper */}
@@ -1010,14 +1105,14 @@ export function AnimatedAIChat() {
                                     <motion.div
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="inline-block"
+                                        className="inline-block relative"
                                     >
-                                        <h1 className="text-3xl font-medium tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white/95 to-white/50 pb-1">
+                                        <h1 className="text-3xl font-medium tracking-tight pb-1" style={{ color: 'var(--chat-text)' }}>
                                             How can I help today?
                                         </h1>
-                                        <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent w-full" />
+                                        <div className="h-px w-full" style={{ background: 'linear-gradient(to right, transparent, var(--sidebar-border), transparent)' }} />
                                     </motion.div>
-                                    <p className="text-xs text-white/40">
+                                    <p className="text-xs" style={{ color: 'var(--chat-text-muted)' }}>
                                         Type a command or ask a question
                                     </p>
                                 </motion.div>
@@ -1041,9 +1136,14 @@ export function AnimatedAIChat() {
                                             <div className={cn(
                                                 "text-sm leading-relaxed",
                                                 msg.role === 'user'
-                                                    ? "max-w-[85%] px-4 py-2.5 rounded-2xl bg-gradient-to-r from-violet-600/15 to-indigo-600/15 border border-violet-500/25 text-white/90 rounded-br-sm shadow-sm"
-                                                    : "max-w-full bg-transparent border-none text-white/95 py-1 px-0 shadow-none w-full"
-                                            )}>
+                                                    ? "max-w-[85%] px-4 py-2.5 rounded-2xl rounded-br-sm shadow-sm"
+                                                    : "max-w-full bg-transparent border-none py-1 px-0 shadow-none w-full"
+                                            )}
+                                            style={msg.role === 'user' ? {
+                                                background: 'var(--msg-user-bg)',
+                                                border: '1px solid var(--msg-user-border)',
+                                                color: 'var(--msg-user-text)'
+                                            } : { color: 'var(--msg-assistant-text)' }}>
                                                 <ReactMarkdown 
                                                     remarkPlugins={[remarkGfm]}
                                                     components={{
@@ -1068,32 +1168,32 @@ export function AnimatedAIChat() {
                                                                  </a>
                                                              );
                                                          },
-                                                         p: ({ node, ...props }) => <p className="mb-4 last:mb-0 leading-[1.7] text-[15px] text-white/90 font-sans font-normal tracking-wide" {...props} />,
-                                                         h1: ({ node, ...props }) => <h1 className="text-2xl font-semibold font-serif text-white mt-6 mb-3 first:mt-0 leading-tight" {...props} />,
-                                                         h2: ({ node, ...props }) => <h2 className="text-xl font-semibold font-serif text-white/95 mt-5 mb-2.5 first:mt-0 leading-tight" {...props} />,
-                                                         h3: ({ node, ...props }) => <h3 className="text-lg font-medium font-serif text-white/90 mt-4 mb-2 first:mt-0 leading-tight" {...props} />,
-                                                         ul: ({ node, ...props }) => <ul className="list-disc pl-6 mb-4 space-y-2 text-white/80" {...props} />,
-                                                         ol: ({ node, ...props }) => <ol className="list-decimal pl-6 mb-4 space-y-2 text-white/80" {...props} />,
-                                                         li: ({ node, ...props }) => <li className="text-[15px] leading-[1.7] text-white/85 font-sans" {...props} />,
-                                                         strong: ({ node, ...props }) => <strong className="font-semibold text-white" {...props} />,
+                                                         p: ({ node, ...props }) => <p className="mb-4 last:mb-0 leading-[1.7] text-[15px] font-sans font-normal tracking-wide" style={{ color: 'var(--msg-assistant-text)' }} {...props} />,
+                                                         h1: ({ node, ...props }) => <h1 className="text-2xl font-semibold font-serif mt-6 mb-3 first:mt-0 leading-tight" style={{ color: 'var(--chat-text)' }} {...props} />,
+                                                         h2: ({ node, ...props }) => <h2 className="text-xl font-semibold font-serif mt-5 mb-2.5 first:mt-0 leading-tight" style={{ color: 'var(--chat-text)' }} {...props} />,
+                                                         h3: ({ node, ...props }) => <h3 className="text-lg font-medium font-serif mt-4 mb-2 first:mt-0 leading-tight" style={{ color: 'var(--chat-text)' }} {...props} />,
+                                                         ul: ({ node, ...props }) => <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--chat-text-secondary)' }} {...props} />,
+                                                         ol: ({ node, ...props }) => <ol className="list-decimal pl-6 mb-4 space-y-2" style={{ color: 'var(--chat-text-secondary)' }} {...props} />,
+                                                         li: ({ node, ...props }) => <li className="text-[15px] leading-[1.7] font-sans" style={{ color: 'var(--chat-text-secondary)' }} {...props} />,
+                                                         strong: ({ node, ...props }) => <strong className="font-semibold" style={{ color: 'var(--chat-text)' }} {...props} />,
                                                          table: ({ node, ...props }) => (
-                                                             <div className="overflow-x-auto my-3 rounded-lg border border-white/10 bg-white/[0.01]">
-                                                                 <table className="min-w-full divide-y divide-white/10 text-xs text-left" {...props} />
+                                                             <div className="overflow-x-auto my-3 rounded-lg border" style={{ borderColor: 'var(--code-border)', background: 'var(--code-bg)' }}>
+                                                                 <table className="min-w-full divide-y text-xs text-left" style={{ divideColor: 'var(--code-border)' }} {...props} />
                                                              </div>
                                                          ),
-                                                         thead: ({ node, ...props }) => <thead className="bg-white/[0.03]" {...props} />,
-                                                         tbody: ({ node, ...props }) => <tbody className="divide-y divide-white/[0.05]" {...props} />,
-                                                         tr: ({ node, ...props }) => <tr className="hover:bg-white/[0.01] transition-colors" {...props} />,
-                                                         th: ({ node, ...props }) => <th className="px-3 py-1.5 font-medium text-white/50 border-r border-white/10 last:border-r-0" {...props} />,
-                                                         td: ({ node, ...props }) => <td className="px-3 py-1.5 text-white/80 border-r border-white/[0.05] last:border-r-0 align-top" {...props} />,
+                                                         thead: ({ node, ...props }) => <thead style={{ background: 'var(--sidebar-hover)' }} {...props} />,
+                                                         tbody: ({ node, ...props }) => <tbody className="divide-y" style={{ divideColor: 'var(--code-border)' }} {...props} />,
+                                                         tr: ({ node, ...props }) => <tr className="transition-colors hover:opacity-80" {...props} />,
+                                                         th: ({ node, ...props }) => <th className="px-3 py-1.5 font-medium border-r last:border-r-0" style={{ color: 'var(--chat-text-muted)', borderColor: 'var(--code-border)' }} {...props} />,
+                                                         td: ({ node, ...props }) => <td className="px-3 py-1.5 border-r last:border-r-0 align-top" style={{ color: 'var(--chat-text-secondary)', borderColor: 'var(--code-border)' }} {...props} />,
                                                          code: ({ node, className, children, ...props }) => {
                                                              const match = /language-(\w+)/.exec(className || '');
                                                              return match ? (
-                                                                 <pre className="bg-black/50 border border-white/10 p-3 rounded-lg overflow-x-auto my-2 text-xs font-mono">
-                                                                     <code className="text-violet-300" {...props}>{children}</code>
+                                                                 <pre className="p-3 rounded-lg overflow-x-auto my-2 text-xs font-mono border" style={{ background: 'var(--code-bg)', borderColor: 'var(--code-border)' }}>
+                                                                     <code style={{ color: 'var(--code-text)' }} {...props}>{children}</code>
                                                                  </pre>
                                                              ) : (
-                                                                 <code className="bg-white/10 px-1.5 py-0.5 rounded text-xs font-mono text-violet-300" {...props}>{children}</code>
+                                                                 <code className="px-1.5 py-0.5 rounded text-xs font-mono border" style={{ background: 'var(--code-bg)', borderColor: 'var(--code-border)', color: 'var(--code-text)' }} {...props}>{children}</code>
                                                              );
                                                          }
                                                      }}
@@ -1108,15 +1208,24 @@ export function AnimatedAIChat() {
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
                                                 transition={{ delay: 0.2 }}
-                                                className="flex items-center gap-2 mt-1.5 text-white/35 shrink-0"
+                                                className="flex items-center gap-2 mt-1.5 shrink-0"
+                                                style={{ color: 'var(--chat-text-muted)' }}
                                             >
+                                                {msg.responseTime && (
+                                                    <div className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium" style={{ background: 'var(--sidebar-hover)', color: 'var(--chat-text-muted)' }}>
+                                                        <Clock className="w-3 h-3" />
+                                                        <span>{msg.responseTime}s</span>
+                                                    </div>
+                                                )}
+                                                
                                                 <button
                                                     onClick={() => handleCopy(msg.content, msg.id)}
-                                                    className="p-1 hover:bg-white/[0.05] rounded hover:text-white transition-colors"
+                                                    className="p-1 rounded transition-colors"
+                                                    style={copiedId === msg.id ? { color: 'var(--accent)' } : {}}
                                                     title="Copy response"
                                                 >
                                                     {copiedId === msg.id ? (
-                                                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                                        <Check className="w-3.5 h-3.5" />
                                                     ) : (
                                                         <Copy className="w-3.5 h-3.5" />
                                                     )}
@@ -1124,10 +1233,8 @@ export function AnimatedAIChat() {
 
                                                 <button
                                                     onClick={() => handleRate(msg.id, 'like')}
-                                                    className={cn(
-                                                        "p-1 hover:bg-white/[0.05] rounded hover:text-white transition-colors",
-                                                        ratings[msg.id] === 'like' && "text-emerald-400 hover:text-emerald-300"
-                                                    )}
+                                                    className="p-1 rounded transition-colors"
+                                                    style={ratings[msg.id] === 'like' ? { color: 'var(--accent)' } : {}}
                                                     title="Good response"
                                                 >
                                                     <ThumbsUp className="w-3.5 h-3.5" />
@@ -1135,10 +1242,8 @@ export function AnimatedAIChat() {
 
                                                 <button
                                                     onClick={() => handleRate(msg.id, 'dislike')}
-                                                    className={cn(
-                                                        "p-1 hover:bg-white/[0.05] rounded hover:text-white transition-colors",
-                                                        ratings[msg.id] === 'dislike' && "text-rose-400 hover:text-rose-300"
-                                                    )}
+                                                    className="p-1 rounded transition-colors"
+                                                    style={ratings[msg.id] === 'dislike' ? { color: 'var(--accent)' } : {}}
                                                     title="Bad response"
                                                 >
                                                     <ThumbsDown className="w-3.5 h-3.5" />
@@ -1146,7 +1251,7 @@ export function AnimatedAIChat() {
 
                                                 <button
                                                     onClick={() => handleRegenerate(msg.id)}
-                                                    className="p-1 hover:bg-white/[0.05] rounded hover:text-white transition-colors"
+                                                    className="p-1 rounded transition-colors hover:opacity-80"
                                                     title="Regenerate response"
                                                 >
                                                     <RotateCw className="w-3.5 h-3.5" />
@@ -1165,20 +1270,20 @@ export function AnimatedAIChat() {
                                             className="flex flex-col w-full"
                                         >
                                             <div className="flex gap-3 max-w-[85%] items-start mr-auto">
-                                                <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 border text-[10px] font-semibold bg-white/[0.05] border-white/10 text-white/60">
+                                                <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 border text-[10px] font-semibold" style={{ background: 'var(--sidebar-hover)', borderColor: 'var(--sidebar-border)', color: 'var(--chat-text-muted)' }}>
                                                     <span>SBB</span>
                                                 </div>
                                                 <motion.div
                                                     animate={{
                                                         borderColor: [
-                                                            "rgba(139, 92, 246, 0.2)",
-                                                            "rgba(236, 72, 153, 0.2)",
-                                                            "rgba(139, 92, 246, 0.2)"
+                                                            "var(--sidebar-border)",
+                                                            "var(--accent)",
+                                                            "var(--sidebar-border)"
                                                         ],
                                                         boxShadow: [
-                                                            "0 0 10px rgba(139, 92, 246, 0.05)",
-                                                            "0 0 20px rgba(236, 72, 153, 0.1)",
-                                                            "0 0 10px rgba(139, 92, 246, 0.05)"
+                                                            "0 0 10px var(--glow-1)",
+                                                            "0 0 20px var(--glow-2)",
+                                                            "0 0 10px var(--glow-1)"
                                                         ]
                                                     }}
                                                     transition={{
@@ -1186,9 +1291,14 @@ export function AnimatedAIChat() {
                                                         repeat: Infinity,
                                                         ease: "easeInOut"
                                                     }}
-                                                    className="px-5 py-3.5 rounded-2xl text-sm bg-white/[0.02] backdrop-blur-md border text-white/95 rounded-tl-sm shadow-sm flex items-center gap-4"
+                                                    className="px-5 py-3.5 rounded-2xl text-sm border rounded-tl-sm shadow-sm flex items-center gap-4"
+                                                    style={{ background: 'var(--msg-user-bg)' }}
                                                 >
-                                                    <span className="text-white/60 text-xs tracking-wider font-medium uppercase">Thinking</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs tracking-wider font-medium uppercase" style={{ color: 'var(--chat-text-muted)' }}>
+                                                            Thinking <span className="opacity-70 lowercase tabular-nums ml-1">({elapsedSeconds}s)</span>
+                                                        </span>
+                                                    </div>
                                                     <TypingDots />
                                                 </motion.div>
                                             </div>
@@ -1202,7 +1312,8 @@ export function AnimatedAIChat() {
                         {/* Chat Input Container */}
                         <motion.div layout className="shrink-0 w-full mt-2">
                             <motion.div 
-                                className="relative backdrop-blur-2xl bg-white/[0.02] rounded-2xl border border-white/[0.05] shadow-2xl"
+                                className="relative backdrop-blur-2xl rounded-2xl border shadow-2xl transition-colors duration-300"
+                                style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)' }}
                                 initial={{ scale: 0.98 }}
                                 animate={{ scale: 1 }}
                                 transition={{ delay: 0.1 }}
@@ -1211,32 +1322,33 @@ export function AnimatedAIChat() {
                                     {showCommandPalette && (
                                         <motion.div 
                                             ref={commandPaletteRef}
-                                            className="absolute left-4 right-4 bottom-full mb-2 backdrop-blur-xl bg-black/90 rounded-lg z-50 shadow-lg border border-white/10 overflow-hidden"
+                                            className="absolute left-4 right-4 bottom-full mb-2 backdrop-blur-xl rounded-lg z-50 shadow-lg border overflow-hidden"
+                                            style={{ background: 'var(--chat-bg)', borderColor: 'var(--sidebar-border)' }}
                                             initial={{ opacity: 0, y: 5 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: 5 }}
                                             transition={{ duration: 0.15 }}
                                         >
-                                            <div className="py-1 bg-black/95">
+                                            <div className="py-1" style={{ background: 'var(--sidebar-bg)' }}>
                                                 {commandSuggestions.map((suggestion, index) => (
                                                     <motion.div
                                                         key={suggestion.prefix}
-                                                        className={cn(
-                                                            "flex items-center gap-2 px-3 py-2 text-xs transition-colors cursor-pointer",
+                                                        className="flex items-center gap-2 px-3 py-2 text-xs transition-colors cursor-pointer"
+                                                        style={
                                                             activeSuggestion === index 
-                                                                ? "bg-white/10 text-white" 
-                                                                : "text-white/70 hover:bg-white/5"
-                                                        )}
+                                                                ? { background: 'var(--sidebar-hover)', color: 'var(--chat-text)' } 
+                                                                : { color: 'var(--chat-text-secondary)' }
+                                                        }
                                                         onClick={() => selectCommandSuggestion(index)}
                                                         initial={{ opacity: 0 }}
                                                         animate={{ opacity: 1 }}
                                                         transition={{ delay: index * 0.03 }}
                                                     >
-                                                        <div className="w-5 h-5 flex items-center justify-center text-white/60">
+                                                        <div className="w-5 h-5 flex items-center justify-center" style={{ color: 'var(--chat-text-muted)' }}>
                                                             {suggestion.icon}
                                                         </div>
                                                         <div className="font-medium">{suggestion.label}</div>
-                                                        <div className="text-white/40 text-xs ml-1">
+                                                        <div className="text-xs ml-1" style={{ color: 'var(--chat-text-muted)' }}>
                                                             {suggestion.prefix}
                                                         </div>
                                                     </motion.div>
@@ -1264,12 +1376,12 @@ export function AnimatedAIChat() {
                                             "resize-none",
                                             "bg-transparent",
                                             "border-none",
-                                            "text-white/90 text-sm",
+                                            "text-sm",
                                             "focus:outline-none",
-                                            "placeholder:text-white/20",
                                             "min-h-[36px]",
                                             "custom-scrollbar"
                                         )}
+                                        style={{ color: 'var(--input-text)' }}
                                         showRing={false}
                                     />
                                 </div>
@@ -1285,7 +1397,8 @@ export function AnimatedAIChat() {
                                             {attachments.map((file, index) => (
                                                 <motion.div
                                                     key={index}
-                                                    className="flex items-center gap-2 text-xs bg-white/[0.03] py-1.5 px-3 rounded-lg text-white/70"
+                                                    className="flex items-center gap-2 text-xs py-1.5 px-3 rounded-lg"
+                                                    style={{ background: 'var(--sidebar-hover)', color: 'var(--chat-text-secondary)' }}
                                                     initial={{ opacity: 0, scale: 0.9 }}
                                                     animate={{ opacity: 1, scale: 1 }}
                                                     exit={{ opacity: 0, scale: 0.9 }}
@@ -1293,7 +1406,8 @@ export function AnimatedAIChat() {
                                                     <span>{file}</span>
                                                     <button 
                                                         onClick={() => removeAttachment(index)}
-                                                        className="text-white/40 hover:text-white transition-colors"
+                                                        className="transition-colors hover:opacity-80"
+                                                        style={{ color: 'var(--chat-text-muted)' }}
                                                     >
                                                         <XIcon className="w-3 h-3" />
                                                     </button>
@@ -1303,7 +1417,7 @@ export function AnimatedAIChat() {
                                     )}
                                 </AnimatePresence>
 
-                                <div className="p-3 border-t border-white/[0.04] flex items-center justify-between gap-4">
+                                <div className="p-3 border-t flex items-center justify-between gap-4" style={{ borderColor: 'var(--input-border)' }}>
                                     <div className="flex items-center gap-2">
                                         <motion.button
                                             type="button"
@@ -1314,13 +1428,15 @@ export function AnimatedAIChat() {
                                             }}
                                             whileTap={{ scale: 0.94 }}
                                             className={cn(
-                                                "p-2 text-white/40 hover:text-white/90 rounded-lg transition-colors relative group",
-                                                showCommandPalette && "bg-white/10 text-white/90"
+                                                "p-2 rounded-lg transition-colors relative group",
+                                                showCommandPalette ? "font-medium" : "hover:opacity-80"
                                             )}
+                                            style={showCommandPalette ? { background: 'var(--sidebar-hover)', color: 'var(--chat-text)' } : { color: 'var(--chat-text-secondary)' }}
                                         >
                                             <Command className="w-4 h-4" />
                                             <motion.span
-                                                className="absolute inset-0 bg-white/[0.05] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                style={{ background: 'var(--sidebar-hover)' }}
                                                 layoutId="button-highlight"
                                             />
                                         </motion.button>
@@ -1332,13 +1448,12 @@ export function AnimatedAIChat() {
                                         whileHover={{ scale: 1.01 }}
                                         whileTap={{ scale: 0.98 }}
                                         disabled={isTyping || !value.trim()}
-                                        className={cn(
-                                            "px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                                            "flex items-center gap-2",
-                                            value.trim()
-                                                ? "bg-white text-[#0A0A0B] shadow-lg shadow-white/10"
-                                                : "bg-white/[0.05] text-white/40"
-                                        )}
+                                        className="px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+                                        style={
+                                            value.trim() && !isTyping
+                                                ? { background: 'var(--btn-primary-bg)', color: 'var(--btn-primary-text)' }
+                                                : { background: 'var(--sidebar-hover)', color: 'var(--chat-text-muted)' }
+                                        }
                                     >
                                         {isTyping ? (
                                             <LoaderIcon className="w-4 h-4 animate-[spin_2s_linear_infinite]" />
@@ -1364,15 +1479,17 @@ export function AnimatedAIChat() {
                                         <motion.button
                                             key={suggestion.prefix}
                                             onClick={() => selectCommandSuggestion(index)}
-                                            className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.02] hover:bg-white/[0.05] rounded-lg text-xs text-white/60 hover:text-white/90 transition-all relative group"
+                                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-all relative group"
+                                            style={{ background: 'var(--btn-secondary-bg)', color: 'var(--btn-secondary-text)', border: '1px solid var(--btn-secondary-border)' }}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: index * 0.1 }}
                                         >
                                             {suggestion.icon}
-                                            <span>{suggestion.label}</span>
+                                            <span style={{ color: 'var(--chat-text)' }}>{suggestion.label}</span>
                                             <motion.div
-                                                className="absolute inset-0 border border-white/[0.05] rounded-lg"
+                                                className="absolute inset-0 rounded-lg"
+                                                style={{ border: '1px solid var(--sidebar-border)' }}
                                                 initial={false}
                                                 animate={{
                                                     opacity: [0, 1],
@@ -1395,9 +1512,10 @@ export function AnimatedAIChat() {
 
 
             {/* Mouse movement gradient glow following cursor */}
-            {inputFocused && (
+            {inputFocused && theme === 'dark' && (
                 <motion.div 
-                    className="fixed w-[50rem] h-[50rem] rounded-full pointer-events-none z-0 opacity-[0.015] bg-gradient-to-r from-violet-500 via-fuchsia-500 to-indigo-500 blur-[96px]"
+                    className="fixed w-[50rem] h-[50rem] rounded-full pointer-events-none z-0 opacity-[0.015] blur-[96px]"
+                    style={{ background: 'var(--glow-1)' }}
                     animate={{
                         x: mousePosition.x - 400,
                         y: mousePosition.y - 400,

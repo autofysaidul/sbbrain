@@ -1,8 +1,107 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ===== Theme System ===== */
+
+[data-theme='dark'] {
+  --chat-bg: #0A0A0B;
+  --chat-text: #FFFFFF;
+  --chat-text-secondary: #A1A1AA;
+  --chat-text-muted: #71717A;
+
+  --sidebar-bg: rgba(0, 0, 0, 0.45);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-hover: rgba(255, 255, 255, 0.06);
+
+  --header-border: rgba(255, 255, 255, 0.08);
+
+  --msg-user-bg: rgba(139, 92, 246, 0.12);
+  --msg-user-border: rgba(139, 92, 246, 0.2);
+  --msg-user-text: #FFFFFF;
+  --msg-assistant-text: #E4E4E7;
+
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --input-text: #FFFFFF;
+  --input-placeholder: #71717A;
+
+  --accent: #8B5CF6;
+  --accent-hover: #7C3AED;
+
+  --btn-primary-bg: #8B5CF6;
+  --btn-primary-text: #FFFFFF;
+  --btn-secondary-bg: rgba(255, 255, 255, 0.06);
+  --btn-secondary-border: rgba(255, 255, 255, 0.1);
+  --btn-secondary-text: #A1A1AA;
+
+  --glow-1: rgba(139, 92, 246, 0.15);
+  --glow-2: rgba(59, 130, 246, 0.1);
+  --glow-3: rgba(236, 72, 153, 0.08);
+
+  --code-bg: rgba(255, 255, 255, 0.05);
+  --code-border: rgba(255, 255, 255, 0.08);
+  --code-text: #E4E4E7;
+
+  --scrollbar-thumb: rgba(255, 255, 255, 0.06);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.15);
+
+  --badge-bg: rgba(139, 92, 246, 0.1);
+  --badge-border: rgba(139, 92, 246, 0.2);
+  --badge-text: #A78BFA;
+
+  /* Legacy compat */
+  --background: #0A0A0B;
+  --foreground: #FFFFFF;
+}
+
+[data-theme='light'] {
+  --chat-bg: #FAF9F7;
+  --chat-text: #1A1A1A;
+  --chat-text-secondary: #6B6B6B;
+  --chat-text-muted: #9C9C9C;
+
+  --sidebar-bg: #F5F3EF;
+  --sidebar-border: #E5E2DC;
+  --sidebar-hover: rgba(0, 0, 0, 0.04);
+
+  --header-border: #E5E2DC;
+
+  --msg-user-bg: #F0ECFF;
+  --msg-user-border: #DDD6FE;
+  --msg-user-text: #1A1A1A;
+  --msg-assistant-text: #2D2D2D;
+
+  --input-bg: #FFFFFF;
+  --input-border: #E5E2DC;
+  --input-text: #1A1A1A;
+  --input-placeholder: #9C9C9C;
+
+  --accent: #8B5CF6;
+  --accent-hover: #7C3AED;
+
+  --btn-primary-bg: #8B5CF6;
+  --btn-primary-text: #FFFFFF;
+  --btn-secondary-bg: #FFFFFF;
+  --btn-secondary-border: #E5E2DC;
+  --btn-secondary-text: #6B6B6B;
+
+  --glow-1: rgba(139, 92, 246, 0.08);
+  --glow-2: rgba(59, 130, 246, 0.06);
+  --glow-3: rgba(236, 72, 153, 0.04);
+
+  --code-bg: #F5F3EF;
+  --code-border: #E5E2DC;
+  --code-text: #1A1A1A;
+
+  --scrollbar-thumb: rgba(0, 0, 0, 0.08);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.18);
+
+  --badge-bg: #F0ECFF;
+  --badge-border: #DDD6FE;
+  --badge-text: #7C3AED;
+
+  /* Legacy compat */
+  --background: #FAF9F7;
+  --foreground: #1A1A1A;
 }
 
 @theme inline {
@@ -12,16 +111,11 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ===== Base Styles ===== */
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--chat-bg);
+  color: var(--chat-text);
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -33,7 +127,8 @@ body {
   box-sizing: border-box;
 }
 
-/* Custom premium scrollbar for messages window */
+/* ===== Theme-Aware Scrollbar ===== */
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
@@ -43,12 +138,12 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--scrollbar-thumb);
   border-radius: 9999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Hide scrollbars but keep functionality */
