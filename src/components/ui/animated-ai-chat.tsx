@@ -775,18 +775,31 @@ export function AnimatedAIChat() {
             {/* 2. MAIN CHAT CONTAINER */}
             <div className="flex-1 flex flex-col relative overflow-hidden h-full">
                 
-                {/* Floating Sidebar Toggle Button */}
-                {!isSidebarOpen && (
-                    <div className="absolute top-4 left-4 z-50">
-                        <button
-                            onClick={() => setIsSidebarOpen(true)}
-                            className="p-2 bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05] text-white/70 hover:text-white rounded-xl transition-colors backdrop-blur-md"
-                            title="Expand Sidebar"
-                        >
-                            <Menu className="w-4 h-4" />
+                {/* Claude-style top header */}
+                <div className="h-14 border-b border-white/[0.04] flex items-center justify-between px-6 bg-transparent shrink-0 z-20 w-full">
+                    <div className="flex items-center gap-3 text-xs text-white/40 font-sans">
+                        {!isSidebarOpen && (
+                            <button
+                                onClick={() => setIsSidebarOpen(true)}
+                                className="p-1.5 hover:bg-white/[0.05] text-white/70 hover:text-white rounded-lg transition-colors mr-1"
+                                title="Expand Sidebar"
+                            >
+                                <Menu className="w-4 h-4" />
+                            </button>
+                        )}
+                        <span>Books & Workshop</span>
+                        <span>/</span>
+                        <span className="text-white/80 font-medium truncate max-w-[180px] sm:max-w-[280px]">
+                            {sessions.find(s => s.id === activeSessionId)?.title || "Supercommunicators chapter structure and breakdown"}
+                        </span>
+                        <span className="text-[10px] opacity-60">▼</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button className="px-3 py-1 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.05] rounded-lg text-xs text-white/70 hover:text-white transition-colors">
+                            Share
                         </button>
                     </div>
-                )}
+                </div>
 
                 {/* Aesthetic background glow lights */}
                 <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
@@ -796,7 +809,7 @@ export function AnimatedAIChat() {
                 </div>
 
                 {/* Primary Chat Box Wrapper */}
-                <div className="flex-1 flex flex-col items-center justify-between p-6 z-10 w-full max-w-2xl mx-auto h-full relative">
+                <div className="flex-1 flex flex-col items-center justify-between p-6 z-10 w-full max-w-3xl mx-auto h-full relative">
                     <motion.div 
                         layout
                         className={cn(
@@ -835,7 +848,7 @@ export function AnimatedAIChat() {
 
                         {/* Scrollable Chat Message History (No borders, transparent container) */}
                         {messages.length > 0 && (
-                            <div className="flex-1 w-full overflow-y-auto space-y-5 py-4 pr-1.5 custom-scrollbar max-h-[78vh]">
+                            <div className="flex-1 w-full overflow-y-auto space-y-5 py-4 pr-1.5 no-scrollbar max-h-[78vh]">
                                 {messages.map((msg) => (
                                     <div key={msg.id} className="flex flex-col w-full">
                                         <motion.div
@@ -843,27 +856,15 @@ export function AnimatedAIChat() {
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ duration: 0.3 }}
                                             className={cn(
-                                                "flex gap-3 max-w-[85%] items-start",
-                                                msg.role === 'user' ? "ml-auto flex-row-reverse" : "mr-auto"
+                                                "w-full flex",
+                                                msg.role === 'user' ? "justify-end" : "justify-start"
                                             )}
                                         >
                                             <div className={cn(
-                                                "w-7 h-7 rounded-full flex items-center justify-center shrink-0 border text-[10px] font-semibold",
-                                                msg.role === 'user' 
-                                                    ? "bg-violet-500/15 border-violet-500/35 text-violet-400" 
-                                                    : "bg-white/[0.05] border-white/10 text-white/80"
-                                            )}>
-                                                {msg.role === 'user' ? (
-                                                    <CircleUserRound className="w-4 h-4" />
-                                                ) : (
-                                                    <span>SBB</span>
-                                                )}
-                                            </div>
-                                            <div className={cn(
                                                 "text-sm leading-relaxed",
                                                 msg.role === 'user'
-                                                    ? "px-4 py-2.5 rounded-2xl bg-gradient-to-r from-violet-600/15 to-indigo-600/15 border border-violet-500/25 text-white/90 rounded-br-sm shadow-sm"
-                                                    : "bg-transparent border-none text-white/95 py-1 px-0 shadow-none"
+                                                    ? "max-w-[85%] px-4 py-2.5 rounded-2xl bg-gradient-to-r from-violet-600/15 to-indigo-600/15 border border-violet-500/25 text-white/90 rounded-br-sm shadow-sm"
+                                                    : "max-w-full bg-transparent border-none text-white/95 py-1 px-0 shadow-none w-full"
                                             )}>
                                                 <ReactMarkdown 
                                                     remarkPlugins={[remarkGfm]}
@@ -929,7 +930,7 @@ export function AnimatedAIChat() {
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
                                                 transition={{ delay: 0.2 }}
-                                                className="flex items-center gap-2 mt-1.5 ml-10 text-white/35 shrink-0"
+                                                className="flex items-center gap-2 mt-1.5 text-white/35 shrink-0"
                                             >
                                                 <button
                                                     onClick={() => handleCopy(msg.content, msg.id)}
