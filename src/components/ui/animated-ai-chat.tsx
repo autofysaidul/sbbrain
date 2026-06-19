@@ -60,6 +60,55 @@ function Figma(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+function preprocessMarkdown(content: string): string {
+    if (!content) return "";
+    // Replace raw HTML br tags with newlines
+    return content.replace(/<br\s*\/?>/gi, "\n");
+}
+
+function getCleanSiteName(urlStr: string): string {
+    if (!urlStr) return "";
+    
+    // Remove protocol and www.
+    let clean = urlStr.replace(/^(https?:\/\/)?(www\.)?/, "");
+    
+    const lower = clean.toLowerCase();
+    if (lower.startsWith("github.com")) {
+        const parts = clean.split("/");
+        if (parts.length > 1 && parts[1]) {
+            return `GitHub (${parts[1]})`;
+        }
+        return "GitHub";
+    }
+    if (lower.startsWith("twitter.com") || lower.startsWith("x.com")) return "Twitter/X";
+    if (lower.startsWith("linkedin.com")) return "LinkedIn";
+    if (lower.startsWith("facebook.com")) return "Facebook";
+    if (lower.startsWith("youtube.com")) return "YouTube";
+    if (lower.startsWith("wikipedia.org")) return "Wikipedia";
+    
+    // Split by path and get the host
+    const host = clean.split("/")[0];
+    
+    // Split host by dots
+    const parts = host.split(".");
+    if (parts.length > 0) {
+        const tlds = ["com", "org", "net", "edu", "gov", "mil", "co", "io", "eu", "cloud", "me", "info", "biz", "us", "uk", "ca", "de", "jp", "fr"];
+        const filtered = parts.filter(p => !tlds.includes(p.toLowerCase()));
+        
+        if (filtered.length > 0) {
+            return filtered
+                .map(part => 
+                    part.split("-")
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(" ")
+                )
+                .join(" ");
+        }
+    }
+    
+    return host;
+}
+
 interface UseAutoResizeTextareaProps {
     minHeight: number;
     maxHeight?: number;
@@ -819,39 +868,59 @@ export function AnimatedAIChat() {
                                                 <ReactMarkdown 
                                                     remarkPlugins={[remarkGfm]}
                                                     components={{
-                                                        a: ({ node, ...props }) => <a className="text-violet-400 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
-                                                        p: ({ node, ...props }) => <p className="mb-2 last:mb-0 leading-relaxed" {...props} />,
-                                                        h1: ({ node, ...props }) => <h1 className="text-lg font-bold mt-3 mb-1 first:mt-0 text-white" {...props} />,
-                                                        h2: ({ node, ...props }) => <h2 className="text-md font-bold mt-2 mb-1 first:mt-0 text-white" {...props} />,
-                                                        h3: ({ node, ...props }) => <h3 className="text-sm font-bold mt-2 mb-1 first:mt-0 text-white" {...props} />,
-                                                        ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />,
-                                                        ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
-                                                        li: ({ node, ...props }) => <li className="text-white/80" {...props} />,
-                                                        strong: ({ node, ...props }) => <strong className="font-semibold text-white" {...props} />,
-                                                        table: ({ node, ...props }) => (
-                                                            <div className="overflow-x-auto my-3 rounded-lg border border-white/10 bg-white/[0.01]">
-                                                                <table className="min-w-full divide-y divide-white/10 text-xs text-left" {...props} />
-                                                            </div>
-                                                        ),
-                                                        thead: ({ node, ...props }) => <thead className="bg-white/[0.03]" {...props} />,
-                                                        tbody: ({ node, ...props }) => <tbody className="divide-y divide-white/[0.05]" {...props} />,
-                                                        tr: ({ node, ...props }) => <tr className="hover:bg-white/[0.01] transition-colors" {...props} />,
-                                                        th: ({ node, ...props }) => <th className="px-3 py-1.5 font-medium text-white/50 border-r border-white/10 last:border-r-0" {...props} />,
-                                                        td: ({ node, ...props }) => <td className="px-3 py-1.5 text-white/80 border-r border-white/[0.05] last:border-r-0 align-top" {...props} />,
-                                                        code: ({ node, className, children, ...props }) => {
-                                                            const match = /language-(\w+)/.exec(className || '');
-                                                            return match ? (
-                                                                <pre className="bg-black/50 border border-white/10 p-3 rounded-lg overflow-x-auto my-2 text-xs font-mono">
-                                                                    <code className="text-violet-300" {...props}>{children}</code>
-                                                                </pre>
-                                                            ) : (
-                                                                <code className="bg-white/10 px-1.5 py-0.5 rounded text-xs font-mono text-violet-300" {...props}>{children}</code>
-                                                            );
-                                                        }
-                                                    }}
-                                                >
-                                                    {msg.content}
-                                                </ReactMarkdown>
+                                                         a: ({ node, href, children, ...props }) => {
+                                                             let displayName = children;
+                                                             if (typeof children === 'string') {
+                                                                 const isUrl = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/i.test(children);
+                                                                 if (isUrl) {
+                                                                     displayName = getCleanSiteName(children);
+                                                                 }
+                                                             }
+                                                             return (
+                                                                 <a 
+                                                                     className="text-violet-400 hover:underline inline-flex items-center gap-0.5 font-medium" 
+                                                                     target="_blank" 
+                                                                     rel="noopener noreferrer" 
+                                                                     href={href}
+                                                                     {...props}
+                                                                 >
+                                                                     {displayName}
+                                                                     <span className="text-[10px] opacity-70 ml-0.5">↗</span>
+                                                                 </a>
+                                                             );
+                                                         },
+                                                         p: ({ node, ...props }) => <p className="mb-2 last:mb-0 leading-relaxed" {...props} />,
+                                                         h1: ({ node, ...props }) => <h1 className="text-lg font-bold mt-3 mb-1 first:mt-0 text-white" {...props} />,
+                                                         h2: ({ node, ...props }) => <h2 className="text-md font-bold mt-2 mb-1 first:mt-0 text-white" {...props} />,
+                                                         h3: ({ node, ...props }) => <h3 className="text-sm font-bold mt-2 mb-1 first:mt-0 text-white" {...props} />,
+                                                         ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />,
+                                                         ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
+                                                         li: ({ node, ...props }) => <li className="text-white/80" {...props} />,
+                                                         strong: ({ node, ...props }) => <strong className="font-semibold text-white" {...props} />,
+                                                         table: ({ node, ...props }) => (
+                                                             <div className="overflow-x-auto my-3 rounded-lg border border-white/10 bg-white/[0.01]">
+                                                                 <table className="min-w-full divide-y divide-white/10 text-xs text-left" {...props} />
+                                                             </div>
+                                                         ),
+                                                         thead: ({ node, ...props }) => <thead className="bg-white/[0.03]" {...props} />,
+                                                         tbody: ({ node, ...props }) => <tbody className="divide-y divide-white/[0.05]" {...props} />,
+                                                         tr: ({ node, ...props }) => <tr className="hover:bg-white/[0.01] transition-colors" {...props} />,
+                                                         th: ({ node, ...props }) => <th className="px-3 py-1.5 font-medium text-white/50 border-r border-white/10 last:border-r-0" {...props} />,
+                                                         td: ({ node, ...props }) => <td className="px-3 py-1.5 text-white/80 border-r border-white/[0.05] last:border-r-0 align-top" {...props} />,
+                                                         code: ({ node, className, children, ...props }) => {
+                                                             const match = /language-(\w+)/.exec(className || '');
+                                                             return match ? (
+                                                                 <pre className="bg-black/50 border border-white/10 p-3 rounded-lg overflow-x-auto my-2 text-xs font-mono">
+                                                                     <code className="text-violet-300" {...props}>{children}</code>
+                                                                 </pre>
+                                                             ) : (
+                                                                 <code className="bg-white/10 px-1.5 py-0.5 rounded text-xs font-mono text-violet-300" {...props}>{children}</code>
+                                                             );
+                                                         }
+                                                     }}
+                                                 >
+                                                     {preprocessMarkdown(msg.content)}
+                                                 </ReactMarkdown>
                                             </div>
                                         </motion.div>
 
