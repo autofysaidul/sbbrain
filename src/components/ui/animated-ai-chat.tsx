@@ -1036,7 +1036,7 @@ export function AnimatedAIChat() {
             <div className="flex-1 flex flex-col relative overflow-hidden h-full">
                 
                 {/* Claude-style top header */}
-                <div className="h-14 flex items-center justify-between px-6 bg-transparent shrink-0 z-20 w-full" style={{ borderBottom: '1px solid var(--header-border)' }}>
+                <div className="h-14 flex items-center justify-between px-6 shrink-0 z-30 w-full relative" style={{ background: 'var(--chat-bg)', borderBottom: '1px solid var(--header-border)' }}>
                     <div className="flex items-center gap-3 text-xs font-sans" style={{ color: 'var(--chat-text-muted)' }}>
                         {!isSidebarOpen && (
                             <button
@@ -1089,8 +1089,8 @@ export function AnimatedAIChat() {
                     <motion.div 
                         layout
                         className={cn(
-                            "relative z-10 w-full flex flex-col h-full",
-                            messages.length > 0 ? "justify-end pb-4" : "justify-center space-y-6"
+                            "relative z-10 w-full flex flex-col h-full min-h-0",
+                            messages.length > 0 ? "pb-4" : "justify-center space-y-6"
                         )}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -1124,7 +1124,7 @@ export function AnimatedAIChat() {
 
                         {/* Scrollable Chat Message History (No borders, transparent container) */}
                         {messages.length > 0 && (
-                            <div className="flex-1 w-full overflow-y-auto space-y-5 py-4 pr-1.5 no-scrollbar max-h-[78vh]">
+                            <div className="flex-1 min-h-0 w-full overflow-y-auto space-y-5 py-4 pr-1.5 no-scrollbar">
                                 {messages.map((msg) => (
                                     <div key={msg.id} className="flex flex-col w-full">
                                         <motion.div
