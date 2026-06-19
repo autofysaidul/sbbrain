@@ -3,9 +3,13 @@ import { saveMessage, deleteMessageAndSubsequent } from '@/lib/db';
 
 export async function POST(request: Request) {
   let activeSessionId = 'default-session';
+  let clientId = undefined;
   try {
     const body = await request.json().catch(() => ({}));
     const { message, sessionId, regenerate, assistantMessageId } = body;
+    if (body.clientId) {
+      clientId = body.clientId;
+    }
     
     if (sessionId) {
       activeSessionId = sessionId;
@@ -21,10 +25,10 @@ export async function POST(request: Request) {
     // 1. Handle message cleanup if regenerating, otherwise save the user message
     if (regenerate) {
       if (assistantMessageId) {
-        deleteMessageAndSubsequent(assistantMessageId, activeSessionId);
+        await deleteMessageAndSubsequent(assistantMessageId, activeSessionId);
       }
     } else {
-      saveMessage('user', message, activeSessionId);
+      await saveMessage('user', message, activeSessionId, clientId);
     }
 
     // 2. Forward message to external webhook
@@ -93,14 +97,14 @@ export async function POST(request: Request) {
     replyText = replyText.trim() || 'No response content was returned by the webhook.';
 
     // 4. Save AI/assistant reply to database (encrypted under activeSessionId)
-    const savedAssistantMsg = saveMessage('assistant', replyText, activeSessionId);
+    const savedAssistantMsg = await saveMessage('assistant', replyText, activeSessionId, clientId);
 
     return NextResponse.json({ reply: savedAssistantMsg });
   } catch (error: any) {
     console.error('Error handling chat API route:', error);
     
     const errorMsg = `Sorry, I encountered an error communicating with the webhook: ${error.message}`;
-    const savedAssistantMsg = saveMessage('assistant', errorMsg, activeSessionId);
+    const savedAssistantMsg = await saveMessage('assistant', errorMsg, activeSessionId, clientId);
     
     return NextResponse.json({ reply: savedAssistantMsg }, { status: 500 });
   }

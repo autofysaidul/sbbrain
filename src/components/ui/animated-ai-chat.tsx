@@ -250,6 +250,7 @@ export function AnimatedAIChat() {
     // Multi-session management states
     const [sessions, setSessions] = useState<Session[]>([]);
     const [activeSessionId, setActiveSessionId] = useState<string>("");
+    const [clientId, setClientId] = useState<string>("");
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     
     // Live messages state loaded from encrypted backend db based on activeSessionId
@@ -300,39 +301,80 @@ export function AnimatedAIChat() {
     ];
 
 
-    // 1. Initial Load of Sessions from localStorage (runs client-side only)
+    // 0. Initialize Client ID
     useEffect(() => {
         if (typeof window !== "undefined") {
-            const storedSessions = localStorage.getItem("dazzling_faraday_sessions");
-            const storedActive = localStorage.getItem("dazzling_faraday_active_session");
-
-            if (storedSessions && storedActive) {
-                try {
-                    const parsedSessions = JSON.parse(storedSessions);
-                    setSessions(parsedSessions);
-                    setActiveSessionId(storedActive);
-                } catch (e) {
-                    console.error("Failed to parse sessions", e);
-                    initializeDefaultSession();
-                }
-            } else {
-                initializeDefaultSession();
+            let id = localStorage.getItem("dazzling_faraday_client_id");
+            if (!id) {
+                id = `client-${Math.random().toString(36).substring(2, 15)}-${Math.random().toString(36).substring(2, 15)}`;
+                localStorage.setItem("dazzling_faraday_client_id", id);
             }
+            setClientId(id);
         }
     }, []);
 
-    const initializeDefaultSession = () => {
+    // 1. Initial Load of Sessions from Supabase
+    useEffect(() => {
+        if (!clientId) return;
+
+        const loadSessions = async () => {
+            try {
+                const response = await fetch(`/api/sessions?clientId=${clientId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.sessions && data.sessions.length > 0) {
+                        setSessions(data.sessions);
+                        
+                        const storedActive = localStorage.getItem("dazzling_faraday_active_session");
+                        const isValidActive = data.sessions.some((s: any) => s.id === storedActive);
+                        
+                        if (storedActive && isValidActive) {
+                            setActiveSessionId(storedActive);
+                        } else {
+                            setActiveSessionId(data.sessions[0].id);
+                            localStorage.setItem("dazzling_faraday_active_session", data.sessions[0].id);
+                        }
+                    } else {
+                        await initializeDefaultSession();
+                    }
+                } else {
+                    await initializeDefaultSession();
+                }
+            } catch (error) {
+                console.error("Failed to fetch sessions from Supabase:", error);
+                await initializeDefaultSession();
+            }
+        };
+
+        loadSessions();
+    }, [clientId]);
+
+    const initializeDefaultSession = async () => {
+        if (!clientId) return;
         const defaultSessionId = `session-${Date.now()}`;
         const defaultSession: Session = {
             id: defaultSessionId,
             title: "Chat Session 1",
             createdAt: new Date().toISOString()
         };
-        const initialList = [defaultSession];
-        localStorage.setItem("dazzling_faraday_sessions", JSON.stringify(initialList));
-        localStorage.setItem("dazzling_faraday_active_session", defaultSessionId);
-        setSessions(initialList);
+        
+        setSessions([defaultSession]);
         setActiveSessionId(defaultSessionId);
+        localStorage.setItem("dazzling_faraday_active_session", defaultSessionId);
+        
+        try {
+            await fetch('/api/sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: defaultSessionId,
+                    title: "Chat Session 1",
+                    clientId
+                })
+            });
+        } catch (error) {
+            console.error("Failed to create default session on Supabase:", error);
+        }
     };
 
     // 2. Load message history when activeSessionId changes
@@ -361,38 +403,60 @@ export function AnimatedAIChat() {
     }, [messages, isTyping]);
 
     // Handle session creation
-    const handleCreateSession = () => {
+    const handleCreateSession = async () => {
+        if (!clientId) return;
         const newId = `session-${Date.now()}`;
         const newSession: Session = {
             id: newId,
             title: `Chat Session ${sessions.length + 1}`,
             createdAt: new Date().toISOString()
         };
+        
         const updated = [...sessions, newSession];
         setSessions(updated);
         setActiveSessionId(newId);
-        localStorage.setItem("dazzling_faraday_sessions", JSON.stringify(updated));
         localStorage.setItem("dazzling_faraday_active_session", newId);
+        
+        try {
+            await fetch('/api/sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: newId,
+                    title: newSession.title,
+                    clientId
+                })
+            });
+        } catch (error) {
+            console.error("Failed to create session on Supabase:", error);
+        }
     };
 
     // Handle session deletion
-    const handleDeleteSession = (e: React.MouseEvent, sessionIdToDelete: string) => {
+    const handleDeleteSession = async (e: React.MouseEvent, sessionIdToDelete: string) => {
         e.stopPropagation();
         const updated = sessions.filter(s => s.id !== sessionIdToDelete);
         
         if (updated.length === 0) {
-            initializeDefaultSession();
+            await initializeDefaultSession();
             return;
         }
 
         setSessions(updated);
-        localStorage.setItem("dazzling_faraday_sessions", JSON.stringify(updated));
 
         // If we deleted the active session, switch to the last remaining one
         if (activeSessionId === sessionIdToDelete) {
             const newActive = updated[updated.length - 1].id;
             setActiveSessionId(newActive);
             localStorage.setItem("dazzling_faraday_active_session", newActive);
+        }
+
+        try {
+            await fetch(`/api/sessions?sessionId=${sessionIdToDelete}`, {
+                method: 'DELETE'
+            });
+        } catch (error) {
+            console.error("Failed to delete session on Supabase:", error);
         }
     };
 
@@ -501,9 +565,19 @@ export function AnimatedAIChat() {
                         }
                         return s;
                     });
-                    localStorage.setItem("dazzling_faraday_sessions", JSON.stringify(updated));
                     return updated;
                 });
+
+                // Save updated title to Supabase
+                fetch('/api/sessions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: activeSessionId,
+                        title: newTitle,
+                        clientId
+                    })
+                }).catch(console.error);
             }
 
             // Add user message locally for instant UI response
@@ -525,7 +599,8 @@ export function AnimatedAIChat() {
                         },
                         body: JSON.stringify({ 
                             message: messageToSend,
-                            sessionId: activeSessionId
+                            sessionId: activeSessionId,
+                            clientId
                         }),
                     });
 
@@ -633,7 +708,8 @@ export function AnimatedAIChat() {
                         message: precedingMsg.content,
                         sessionId: activeSessionId,
                         regenerate: true,
-                        assistantMessageId: msgId
+                        assistantMessageId: msgId,
+                        clientId
                     }),
                 });
 

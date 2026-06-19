@@ -6,7 +6,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId') || 'default-session';
 
-    const messages = getMessagesDecrypted(sessionId);
+    const messages = await getMessagesDecrypted(sessionId);
     return NextResponse.json({ messages });
   } catch (error: any) {
     console.error('Error fetching chat history:', error);
