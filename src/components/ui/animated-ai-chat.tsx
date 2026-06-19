@@ -916,7 +916,7 @@ export function AnimatedAIChat() {
     };
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden relative transition-colors duration-300" style={{ background: 'var(--chat-bg)', color: 'var(--chat-text)' }}>
+        <div className="absolute inset-0 flex overflow-hidden transition-colors duration-300" style={{ background: 'var(--chat-bg)', color: 'var(--chat-text)' }}>
             
             {/* 1. COLLAPSIBLE SIDEBAR */}
             <AnimatePresence initial={false}>
