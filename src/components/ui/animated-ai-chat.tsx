@@ -651,8 +651,8 @@ export function AnimatedAIChat() {
         }
     };
 
-    const handleSendMessage = async () => {
-        const messageToSend = value.trim();
+    const handleSendMessage = async (overrideText?: string) => {
+        const messageToSend = (overrideText || value).trim();
         if (messageToSend && activeSessionId) {
             setValue("");
             adjustHeight(true);
@@ -916,621 +916,280 @@ export function AnimatedAIChat() {
     };
 
     return (
-        <div className="absolute inset-0 flex overflow-hidden transition-colors duration-300" style={{ background: 'var(--chat-bg)', color: 'var(--chat-text)' }}>
-            
-            {/* 1. COLLAPSIBLE SIDEBAR */}
-            <AnimatePresence initial={false}>
-                {isSidebarOpen && (
-                    <motion.div
-                        initial={{ width: 0, opacity: 0 }}
-                        animate={{ width: 260, opacity: 1 }}
-                        exit={{ width: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="h-full flex flex-col shrink-0 z-40 overflow-hidden relative backdrop-blur-2xl transition-colors duration-300"
-                        style={{ background: 'var(--sidebar-bg)', borderRight: '1px solid var(--sidebar-border)' }}
+        <div className="d-flex">
+            {/* Mobile overlay */}
+            <div 
+                className={`sbb-sidebar-overlay ${isSidebarOpen ? 'show' : ''}`} 
+                onClick={() => setIsSidebarOpen(false)}
+            ></div>
+
+            {/* SIDEBAR */}
+            <aside className={`sbb-sidebar ${isSidebarOpen ? 'show' : ''}`} id="sbbSidebar">
+                <div className="sbb-sidebar-head mb-1">
+                    <div className="d-flex align-items-center gap-2">
+                        <div className="sbb-logo-mark">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                <path d="M3 4L12 20L21 4" stroke="#ffffff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                        </div>
+                        <div className="sbb-brand-name">SB Brain</div>
+                    </div>
+                    <button className="sbb-sidebar-close" onClick={() => setIsSidebarOpen(false)} aria-label="Close menu">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                    </button>
+                </div>
+
+                <div className="sbb-nav-section-label">Workspace</div>
+                <button className="sbb-nav-link active" onClick={handleCreateSession}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Ask the Brain
+                </button>
+
+                <div className="sbb-nav-section-label mt-4">History</div>
+                {sessions.map(s => (
+                    <button 
+                        key={s.id} 
+                        className={`sbb-nav-link ${s.id === activeSessionId ? 'active' : ''}`} 
+                        onClick={() => { setActiveSessionId(s.id); setIsSidebarOpen(false); }}
+                        style={{ fontSize: '0.85rem' }}
                     >
-                        {/* Sidebar Header */}
-                        <div className="p-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
-                            <div className="flex items-center gap-2">
-                                <Sparkles className="w-5 h-5 text-violet-400 animate-pulse" />
-                                <span className="font-semibold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-violet-400">SB Brain</span>
+                        {s.title}
+                    </button>
+                ))}
+            </aside>
+
+            {/* MAIN */}
+            <main className="sbb-main">
+                <div className="sbb-topbar">
+                    <div className="d-flex align-items-center gap-3">
+                        <button className="btn btn-sm d-lg-none border-0 p-0" onClick={() => setIsSidebarOpen(true)} style={{ color: 'var(--ink)' }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                        </button>
+                        <span className="sbb-topbar-title">The AI Brain for Social Business</span>
+                    </div>
+
+                    <div className="d-flex align-items-center gap-3">
+                        <span className="badge rounded-pill d-none d-sm-inline-block" style={{ background: 'var(--panel)', color: 'var(--teal-deep)', fontWeight: 500 }}>Knowledge base: live</span>
+                        <div className="dropdown">
+                            <button className="sbb-user-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span className="sbb-user-avatar">SR</span>
+                                <span className="d-none d-md-block text-start">
+                                    <span className="sbb-user-name d-block">Saidul Haque</span>
+                                    <span className="sbb-user-role d-block">Administrator</span>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {messages.length === 0 ? (
+                    <>
+                        {/* HERO */}
+                        <section className="sbb-hero" id="sbbHero">
+                            <div className="sbb-avatar-ring">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                                    <path d="M3 4L12 20L21 4" stroke="#ffffff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
                             </div>
-                            <button 
-                                onClick={() => setIsSidebarOpen(false)}
-                                className="p-1 rounded-md transition-colors hover:opacity-80"
-                                style={{ color: 'var(--chat-text-muted)' }}
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                            </button>
-                        </div>
+                            <h1 className="font-display">Hi, I&apos;m the Social Business Brain</h1>
+                            <p className="lead-sub">One knowledge base. Every concept, model, case study, and event — answered in one place.</p>
 
-                        {/* New Chat Button */}
-                        <div className="p-3">
-                            <button
-                                onClick={handleCreateSession}
-                                className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-sm font-medium transition-all duration-200"
-                                style={{ 
-                                    background: 'var(--btn-secondary-bg)',
-                                    border: '1px solid var(--btn-secondary-border)',
-                                    color: 'var(--btn-secondary-text)'
-                                }}
-                            >
-                                <PlusIcon className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-                                <span>New Chat</span>
-                            </button>
-                        </div>
+                            <div className="sbb-convergence" aria-hidden="true">
+                                <span className="conv-tag t1">news & media</span>
+                                <span className="conv-tag t2">events</span>
+                                <span className="conv-tag t3">sb world</span>
+                                <span className="conv-tag t4">sb wiki</span>
+                                <span className="conv-tag t5">academia</span>
+                                <span className="conv-tag t6">design lab</span>
+                            </div>
 
-                        {/* Sessions List & Coming Soon */}
-                        <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-6 custom-scrollbar">
-                            <div className="space-y-1.5">
-                                <div className="text-[10px] font-semibold uppercase tracking-widest px-2.5 mb-2" style={{ color: 'var(--chat-text-muted)' }}>Recent Chats</div>
-                                {sessions.map((session) => (
-                                    <div
-                                        key={session.id}
-                                        onClick={() => setActiveSessionId(session.id)}
-                                        className={cn(
-                                            "group flex items-center justify-between px-3 py-2 rounded-xl text-xs cursor-pointer transition-all duration-200",
-                                            activeSessionId === session.id
-                                                ? "font-medium"
-                                                : "border-transparent"
-                                        )}
-                                        style={
-                                            activeSessionId === session.id 
-                                                ? { background: 'var(--sidebar-hover)', border: '1px solid var(--sidebar-border)', color: 'var(--chat-text)' }
-                                                : { color: 'var(--chat-text-secondary)', border: '1px solid transparent' }
+                            <div className="sbb-input-card">
+                                <textarea 
+                                    rows={1} 
+                                    placeholder="Ask Social Business Brain"
+                                    value={value}
+                                    onChange={(e) => {
+                                        setValue(e.target.value);
+                                        e.target.style.height = 'auto';
+                                        e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            if (value.trim() && !isPending) handleSendMessage();
                                         }
-                                    >
-                                        <div className="flex items-center gap-2 overflow-hidden mr-2">
-                                            <div className={cn(
-                                                "w-1.5 h-1.5 rounded-full",
-                                                activeSessionId === session.id ? "bg-violet-400" : "bg-transparent"
-                                            )} />
-                                            <span className="truncate">{session.title}</span>
-                                        </div>
-                                        <button
-                                            onClick={(e) => handleDeleteSession(e, session.id)}
-                                            className="opacity-0 group-hover:opacity-100 p-1 rounded transition-all duration-200 hover:opacity-80"
-                                            style={{ color: 'var(--chat-text-muted)', background: 'var(--sidebar-hover)' }}
-                                            title="Delete/Close Session"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
+                                    }}
+                                />
+                                <div className="sbb-input-toolbar">
+                                    <div className="d-flex gap-2">
+                                        <button className="sbb-chip-btn">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                                            Add source
+                                        </button>
+                                        <button className="sbb-chip-btn">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 3v4M12 17v4M5 12H3M21 12h-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2"/></svg>
+                                            Auto Model
                                         </button>
                                     </div>
-                                ))}
+                                    <button 
+                                        className="sbb-send-btn" 
+                                        onClick={() => handleSendMessage()} 
+                                        disabled={isPending || !value.trim()}
+                                    >
+                                        {isPending ? <div className="spinner-border spinner-border-sm" /> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                    </button>
+                                </div>
                             </div>
 
-                            {/* Coming Soon / Upcoming Section */}
-                            <div className="pt-2" style={{ borderTop: '1px solid var(--sidebar-border)' }}>
-                                <div className="text-[10px] font-semibold uppercase tracking-widest px-2.5 mb-2.5 flex items-center gap-1.5" style={{ color: 'var(--chat-text-muted)' }}>
-                                    <span className="w-1 h-1 rounded-full animate-ping" style={{ background: 'var(--accent)' }} />
-                                    Coming Soon
+                            <div className="sbb-topics">
+                                {commandSuggestions.map((cmd, idx) => (
+                                    <button 
+                                        key={idx} 
+                                        className="sbb-topic-pill sbb-topic-pill-btn"
+                                        onClick={() => {
+                                            setValue(cmd.label);
+                                            setTimeout(() => handleSendMessage(cmd.label), 50);
+                                        }}
+                                    >
+                                        <span className="dot" style={idx % 2 !== 0 ? { background: 'var(--gold)' } : {}}></span>
+                                        {cmd.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* TRENDING SB NEWS */}
+                        <section className="sbb-phase2" id="sbbNewsSection">
+                            <div className="sbb-phase2-head">
+                                <h2 className="font-display">Trending SB News</h2>
+                                <span className="eyebrow">From Social Business Pedia</span>
+                            </div>
+                            <div className="row g-3">
+                                <div className="col-md-6 col-lg-4">
+                                    <a href="#" className="news-card">
+                                        <span className="news-tag">News</span>
+                                        <h3>Grameen Nobin entrepreneurs cross 500 active ventures milestone</h3>
+                                        <p>A look at how grassroots social businesses are scaling across rural Bangladesh this quarter.</p>
+                                        <span className="news-date">2 days ago</span>
+                                    </a>
                                 </div>
-                                <div className="space-y-0.5">
-                                    {comingSoonItems.map((item) => (
-                                        <div
-                                            key={item.name}
-                                            className="group flex items-center justify-between px-3 py-1.5 rounded-xl text-xs transition-all duration-200 cursor-default hover:opacity-80"
-                                            style={{ color: 'var(--chat-text-secondary)', border: '1px solid transparent' }}
-                                        >
-                                            <div className="flex items-center gap-2 overflow-hidden">
-                                                <div className={cn(
-                                                    "w-1.5 h-1.5 rounded-full bg-gradient-to-r shrink-0 opacity-60 group-hover:opacity-100 transition-opacity",
-                                                    item.color
-                                                )} />
-                                                <span className="truncate">{item.name}</span>
-                                            </div>
-                                            <span className="text-[8px] font-medium px-1.5 py-0.5 rounded transition-all group-hover:text-violet-400 group-hover:border-violet-500/25"
-                                                  style={{ background: 'var(--badge-bg)', border: '1px solid var(--badge-border)', color: 'var(--chat-text-muted)' }}>
-                                                Soon
-                                            </span>
+                                <div className="col-md-6 col-lg-4">
+                                    <a href="#" className="news-card">
+                                        <span className="news-tag">Event</span>
+                                        <h3>Social Business Day 2026: registrations now open</h3>
+                                        <p>Speakers, sessions, and workshops confirmed for this year&apos;s flagship gathering.</p>
+                                        <span className="news-date">4 days ago</span>
+                                    </a>
+                                </div>
+                                <div className="col-md-6 col-lg-4">
+                                    <a href="#" className="news-card">
+                                        <span className="news-tag">Academia</span>
+                                        <h3>New research paper on the Yunus Social Business Model published</h3>
+                                        <p>Fresh academic analysis on applying the seven principles in emerging markets.</p>
+                                        <span className="news-date">1 week ago</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </section>
+                        
+                        <footer className="sbb-footer" id="sbbFooter">
+                            <div className="d-flex align-items-center gap-2 mb-3">
+                                <div className="sbb-logo-mark" style={{ width: '28px', height: '28px' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 4L12 20L21 4" stroke="#ffffff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                </div>
+                                <h5 className="mb-0">Social Business Brain</h5>
+                            </div>
+                            <p className="mb-2" style={{ maxWidth: '680px' }}>A unified knowledge engine for Social Business Pedia — one brain holding every concept, model, case study, and live event, so any question gets one clear answer.</p>
+                            <p style={{ color: '#C77E96', maxWidth: '680px' }}>Built on the Social Business Pedia knowledge base. Continuously updated as new sessions, speakers, and case studies are added.</p>
+
+                            <div className="sbb-footer-bottom">
+                                <span>© 2026 Social Business Pedia — Social Impact Hub</span>
+                                <a href="https://autofysolutions.com" target="_blank" rel="noopener noreferrer" className="sbb-credit-link">
+                                    Developed by Autofy Solutions — empowering grassroots entrepreneurs through technology, systemization & education
+                                </a>
+                            </div>
+                        </footer>
+                    </>
+                ) : (
+                    <>
+                        {/* CHAT AREA */}
+                        <div className="sbb-chat-area show" id="sbbChatArea">
+                            <div className="sbb-chat-inner" id="sbbChatInner">
+                                {messages.map((msg) => (
+                                    msg.role === 'user' ? (
+                                        <div key={msg.id} className="sbb-chat-user-msg">
+                                            {msg.content}
                                         </div>
-                                    ))}
+                                    ) : (
+                                        <div key={msg.id} className="sbb-chat-response mb-4">
+                                            <div className="resp-head">
+                                                <span className="resp-avatar">
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M3 4L12 20L21 4" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                                </span>
+                                                Social Business Brain
+                                            </div>
+                                            <div className="prose prose-sm max-w-none text-[var(--ink)]">
+                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                    {preprocessMarkdown(msg.content)}
+                                                </ReactMarkdown>
+                                            </div>
+                                        </div>
+                                    )
+                                ))}
+                                
+                                {isPending && (
+                                    <div className="sbb-chat-loading">
+                                        <div className="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                                        <span>Social Business Brain is thinking…</span>
+                                    </div>
+                                )}
+                                <div ref={messagesEndRef} />
+                            </div>
+                        </div>
+
+                        {/* BOTTOM-DOCKED INPUT */}
+                        <div className="sbb-input-dock" id="sbbInputDock">
+                            <div className="sbb-input-card">
+                                <textarea 
+                                    rows={1} 
+                                    placeholder="Ask Social Business Brain"
+                                    value={value}
+                                    onChange={(e) => {
+                                        setValue(e.target.value);
+                                        e.target.style.height = 'auto';
+                                        e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            if (value.trim() && !isPending) handleSendMessage();
+                                        }
+                                    }}
+                                />
+                                <div className="sbb-input-toolbar">
+                                    <div className="d-flex gap-2">
+                                        <button className="sbb-chip-btn">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                                            Add source
+                                        </button>
+                                        <button className="sbb-chip-btn">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 3v4M12 17v4M5 12H3M21 12h-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2"/></svg>
+                                            Auto Model
+                                        </button>
+                                    </div>
+                                    <button 
+                                        className="sbb-send-btn" 
+                                        onClick={() => handleSendMessage()}
+                                        disabled={isPending || !value.trim()}
+                                    >
+                                        {isPending ? <div className="spinner-border spinner-border-sm" /> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                    </motion.div>
+                    </>
                 )}
-            </AnimatePresence>
-
-            {/* 2. MAIN CHAT CONTAINER */}
-            <div className="flex-1 flex flex-col relative overflow-hidden h-full">
-                
-                {/* Claude-style top header */}
-                <div className="h-14 flex items-center justify-between px-6 shrink-0 z-30 w-full relative" style={{ background: 'var(--chat-bg)', borderBottom: '1px solid var(--header-border)' }}>
-                    <div className="flex items-center gap-3 text-xs font-sans" style={{ color: 'var(--chat-text-muted)' }}>
-                        {!isSidebarOpen && (
-                            <button
-                                onClick={() => setIsSidebarOpen(true)}
-                                className="p-1.5 rounded-lg transition-colors mr-2 flex items-center justify-center hover:opacity-80"
-                                style={{ color: 'var(--chat-text)', background: 'var(--btn-secondary-bg)', border: '1px solid var(--btn-secondary-border)' }}
-                                title="Expand Sidebar"
-                            >
-                                <Menu className="w-4 h-4" />
-                            </button>
-                        )}
-                        <span>Books & Workshop</span>
-                        <span>/</span>
-                        <span className="font-medium truncate max-w-[180px] sm:max-w-[280px]" style={{ color: 'var(--chat-text)' }}>
-                            {sharedParentId 
-                                ? "Shared Chat (Preview)" 
-                                : (sessions.find(s => s.id === activeSessionId)?.title || "Supercommunicators chapter structure and breakdown")
-                            }
-                        </span>
-                        <span className="text-[10px] opacity-60">▼</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={toggleTheme}
-                            className="p-1.5 rounded-lg transition-colors"
-                            style={{ color: 'var(--chat-text-secondary)', background: 'var(--btn-secondary-bg)', border: '1px solid var(--btn-secondary-border)' }}
-                            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-                        >
-                            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                        </button>
-                        <button 
-                            onClick={handleShare}
-                            className="px-3 py-1 rounded-lg text-xs transition-colors"
-                            style={{ background: 'var(--btn-secondary-bg)', border: '1px solid var(--btn-secondary-border)', color: 'var(--btn-secondary-text)' }}
-                        >
-                            {shareCopied ? "Copied!" : "Share"}
-                        </button>
-                    </div>
-                </div>
-
-                {/* Aesthetic background glow lights */}
-                <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none opacity-50">
-                    <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full mix-blend-normal filter blur-[128px] animate-pulse" style={{ background: 'var(--glow-1)' }} />
-                    <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full mix-blend-normal filter blur-[128px] animate-pulse delay-700" style={{ background: 'var(--glow-2)' }} />
-                    <div className="absolute top-1/4 right-1/3 w-64 h-64 rounded-full mix-blend-normal filter blur-[96px] animate-pulse delay-1000" style={{ background: 'var(--glow-3)' }} />
-                </div>
-
-                {/* Primary Chat Box Wrapper */}
-                <div className="flex-1 flex flex-col items-center justify-between p-6 z-10 w-full max-w-3xl mx-auto relative min-h-0">
-                    <motion.div 
-                        layout
-                        className={cn(
-                            "relative z-10 w-full flex flex-col h-full min-h-0",
-                            messages.length > 0 ? "pb-4" : "justify-center space-y-6"
-                        )}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, ease: "easeOut" }}
-                    >
-                        {/* Splash Header (Only when no messages) */}
-                        <AnimatePresence>
-                            {messages.length === 0 && (
-                                <motion.div
-                                    initial={{ opacity: 1, height: "auto", scale: 1 }}
-                                    exit={{ opacity: 0, height: 0, scale: 0.95, overflow: "hidden", marginBottom: 0 }}
-                                    transition={{ duration: 0.4, ease: "easeInOut" }}
-                                    className="text-center space-y-2 shrink-0 mb-4"
-                                >
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className="inline-block relative"
-                                    >
-                                        <h1 className="text-3xl font-medium tracking-tight pb-1" style={{ color: 'var(--chat-text)' }}>
-                                            How can I help today?
-                                        </h1>
-                                        <div className="h-px w-full" style={{ background: 'linear-gradient(to right, transparent, var(--sidebar-border), transparent)' }} />
-                                    </motion.div>
-                                    <p className="text-xs" style={{ color: 'var(--chat-text-muted)' }}>
-                                        Type a command or ask a question
-                                    </p>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Scrollable Chat Message History (No borders, transparent container) */}
-                        {messages.length > 0 && (
-                            <div className="flex-1 min-h-0 w-full overflow-y-auto space-y-5 py-4 pr-1.5 no-scrollbar">
-                                {messages.map((msg) => (
-                                    <div key={msg.id} className="flex flex-col w-full">
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 8 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.3 }}
-                                            className={cn(
-                                                "w-full flex",
-                                                msg.role === 'user' ? "justify-end" : "justify-start"
-                                            )}
-                                        >
-                                            <div className={cn(
-                                                "text-sm leading-relaxed",
-                                                msg.role === 'user'
-                                                    ? "max-w-[85%] px-4 py-2.5 rounded-2xl rounded-br-sm shadow-sm"
-                                                    : "max-w-full bg-transparent border-none py-1 px-0 shadow-none w-full"
-                                            )}
-                                            style={msg.role === 'user' ? {
-                                                background: 'var(--msg-user-bg)',
-                                                border: '1px solid var(--msg-user-border)',
-                                                color: 'var(--msg-user-text)'
-                                            } : { color: 'var(--msg-assistant-text)' }}>
-                                                <ReactMarkdown 
-                                                    remarkPlugins={[remarkGfm]}
-                                                    components={{
-                                                         a: ({ node, href, children, ...props }) => {
-                                                             let displayName = children;
-                                                             if (typeof children === 'string') {
-                                                                 const isUrl = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/i.test(children);
-                                                                 if (isUrl) {
-                                                                     displayName = getCleanSiteName(children);
-                                                                 }
-                                                             }
-                                                             return (
-                                                                 <a 
-                                                                     className="text-violet-400 hover:underline inline-flex items-center gap-0.5 font-medium" 
-                                                                     target="_blank" 
-                                                                     rel="noopener noreferrer" 
-                                                                     href={href}
-                                                                     {...props}
-                                                                 >
-                                                                     {displayName}
-                                                                     <span className="text-[10px] opacity-70 ml-0.5">↗</span>
-                                                                 </a>
-                                                             );
-                                                         },
-                                                         p: ({ node, ...props }) => <p className="mb-4 last:mb-0 leading-[1.7] text-[15px] font-sans font-normal tracking-wide" style={{ color: 'var(--msg-assistant-text)' }} {...props} />,
-                                                         h1: ({ node, ...props }) => <h1 className="text-2xl font-semibold font-serif mt-6 mb-3 first:mt-0 leading-tight" style={{ color: 'var(--chat-text)' }} {...props} />,
-                                                         h2: ({ node, ...props }) => <h2 className="text-xl font-semibold font-serif mt-5 mb-2.5 first:mt-0 leading-tight" style={{ color: 'var(--chat-text)' }} {...props} />,
-                                                         h3: ({ node, ...props }) => <h3 className="text-lg font-medium font-serif mt-4 mb-2 first:mt-0 leading-tight" style={{ color: 'var(--chat-text)' }} {...props} />,
-                                                         ul: ({ node, ...props }) => <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--chat-text-secondary)' }} {...props} />,
-                                                         ol: ({ node, ...props }) => <ol className="list-decimal pl-6 mb-4 space-y-2" style={{ color: 'var(--chat-text-secondary)' }} {...props} />,
-                                                         li: ({ node, ...props }) => <li className="text-[15px] leading-[1.7] font-sans" style={{ color: 'var(--chat-text-secondary)' }} {...props} />,
-                                                         strong: ({ node, ...props }) => <strong className="font-semibold" style={{ color: 'var(--chat-text)' }} {...props} />,
-                                                         table: ({ node, ...props }) => (
-                                                             <div className="overflow-x-auto my-3 rounded-lg border" style={{ borderColor: 'var(--code-border)', background: 'var(--code-bg)' }}>
-                                                                 <table className="min-w-full text-xs text-left" {...props} />
-                                                             </div>
-                                                         ),
-                                                         thead: ({ node, ...props }) => <thead style={{ background: 'var(--sidebar-hover)' }} {...props} />,
-                                                         tbody: ({ node, ...props }) => <tbody {...props} />,
-                                                         tr: ({ node, ...props }) => <tr className="transition-colors hover:opacity-80 border-b last:border-b-0" style={{ borderColor: 'var(--code-border)' }} {...props} />,
-                                                         th: ({ node, ...props }) => <th className="px-3 py-1.5 font-medium border-r last:border-r-0" style={{ color: 'var(--chat-text-muted)', borderColor: 'var(--code-border)' }} {...props} />,
-                                                         td: ({ node, ...props }) => <td className="px-3 py-1.5 border-r last:border-r-0 align-top" style={{ color: 'var(--chat-text-secondary)', borderColor: 'var(--code-border)' }} {...props} />,
-                                                         code: ({ node, className, children, ...props }) => {
-                                                             const match = /language-(\w+)/.exec(className || '');
-                                                             return match ? (
-                                                                 <pre className="p-3 rounded-lg overflow-x-auto my-2 text-xs font-mono border" style={{ background: 'var(--code-bg)', borderColor: 'var(--code-border)' }}>
-                                                                     <code style={{ color: 'var(--code-text)' }} {...props}>{children}</code>
-                                                                 </pre>
-                                                             ) : (
-                                                                 <code className="px-1.5 py-0.5 rounded text-xs font-mono border" style={{ background: 'var(--code-bg)', borderColor: 'var(--code-border)', color: 'var(--code-text)' }} {...props}>{children}</code>
-                                                             );
-                                                         }
-                                                     }}
-                                                 >
-                                                     {preprocessMarkdown(msg.content)}
-                                                 </ReactMarkdown>
-                                            </div>
-                                        </motion.div>
-
-                                        {msg.role === 'assistant' && (
-                                            <motion.div
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                transition={{ delay: 0.2 }}
-                                                className="flex items-center gap-2 mt-1.5 shrink-0"
-                                                style={{ color: 'var(--chat-text-muted)' }}
-                                            >
-                                                {msg.responseTime && (
-                                                    <div className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium" style={{ background: 'var(--sidebar-hover)', color: 'var(--chat-text-muted)' }}>
-                                                        <Clock className="w-3 h-3" />
-                                                        <span>{msg.responseTime}s</span>
-                                                    </div>
-                                                )}
-                                                
-                                                <button
-                                                    onClick={() => handleCopy(msg.content, msg.id)}
-                                                    className="p-1 rounded transition-colors"
-                                                    style={copiedId === msg.id ? { color: 'var(--accent)' } : {}}
-                                                    title="Copy response"
-                                                >
-                                                    {copiedId === msg.id ? (
-                                                        <Check className="w-3.5 h-3.5" />
-                                                    ) : (
-                                                        <Copy className="w-3.5 h-3.5" />
-                                                    )}
-                                                </button>
-
-                                                <button
-                                                    onClick={() => handleRate(msg.id, 'like')}
-                                                    className="p-1 rounded transition-colors"
-                                                    style={ratings[msg.id] === 'like' ? { color: 'var(--accent)' } : {}}
-                                                    title="Good response"
-                                                >
-                                                    <ThumbsUp className="w-3.5 h-3.5" />
-                                                </button>
-
-                                                <button
-                                                    onClick={() => handleRate(msg.id, 'dislike')}
-                                                    className="p-1 rounded transition-colors"
-                                                    style={ratings[msg.id] === 'dislike' ? { color: 'var(--accent)' } : {}}
-                                                    title="Bad response"
-                                                >
-                                                    <ThumbsDown className="w-3.5 h-3.5" />
-                                                </button>
-
-                                                <button
-                                                    onClick={() => handleRegenerate(msg.id)}
-                                                    className="p-1 rounded transition-colors hover:opacity-80"
-                                                    title="Regenerate response"
-                                                >
-                                                    <RotateCw className="w-3.5 h-3.5" />
-                                                </button>
-                                            </motion.div>
-                                        )}
-                                    </div>
-                                ))}
-                                <AnimatePresence>
-                                    {isTyping && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -10 }}
-                                            transition={{ duration: 0.25 }}
-                                            className="flex flex-col w-full"
-                                        >
-                                            <div className="flex gap-3 max-w-[85%] items-start mr-auto">
-                                                <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 border text-[10px] font-semibold" style={{ background: 'var(--sidebar-hover)', borderColor: 'var(--sidebar-border)', color: 'var(--chat-text-muted)' }}>
-                                                    <span>SBB</span>
-                                                </div>
-                                                <motion.div
-                                                    animate={{
-                                                        borderColor: [
-                                                            "var(--sidebar-border)",
-                                                            "var(--accent)",
-                                                            "var(--sidebar-border)"
-                                                        ],
-                                                        boxShadow: [
-                                                            "0 0 10px var(--glow-1)",
-                                                            "0 0 20px var(--glow-2)",
-                                                            "0 0 10px var(--glow-1)"
-                                                        ]
-                                                    }}
-                                                    transition={{
-                                                        duration: 3,
-                                                        repeat: Infinity,
-                                                        ease: "easeInOut"
-                                                    }}
-                                                    className="px-5 py-3.5 rounded-2xl text-sm border rounded-tl-sm shadow-sm flex items-center gap-4"
-                                                    style={{ background: 'var(--msg-user-bg)' }}
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-xs tracking-wider font-medium uppercase" style={{ color: 'var(--chat-text-muted)' }}>
-                                                            Thinking <span className="opacity-70 lowercase tabular-nums ml-1">({elapsedSeconds}s)</span>
-                                                        </span>
-                                                    </div>
-                                                    <TypingDots />
-                                                </motion.div>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                                <div ref={messagesEndRef} />
-                            </div>
-                        )}
-
-                        {/* Chat Input Container */}
-                        <motion.div layout className="shrink-0 w-full mt-2">
-                            <motion.div 
-                                className="relative backdrop-blur-2xl rounded-2xl border shadow-2xl transition-colors duration-300"
-                                style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)' }}
-                                initial={{ scale: 0.98 }}
-                                animate={{ scale: 1 }}
-                                transition={{ delay: 0.1 }}
-                            >
-                                <AnimatePresence>
-                                    {showCommandPalette && (
-                                        <motion.div 
-                                            ref={commandPaletteRef}
-                                            className="absolute left-4 right-4 bottom-full mb-2 backdrop-blur-xl rounded-lg z-50 shadow-lg border overflow-hidden"
-                                            style={{ background: 'var(--chat-bg)', borderColor: 'var(--sidebar-border)' }}
-                                            initial={{ opacity: 0, y: 5 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: 5 }}
-                                            transition={{ duration: 0.15 }}
-                                        >
-                                            <div className="py-1" style={{ background: 'var(--sidebar-bg)' }}>
-                                                {commandSuggestions.map((suggestion, index) => (
-                                                    <motion.div
-                                                        key={suggestion.prefix}
-                                                        className="flex items-center gap-2 px-3 py-2 text-xs transition-colors cursor-pointer"
-                                                        style={
-                                                            activeSuggestion === index 
-                                                                ? { background: 'var(--sidebar-hover)', color: 'var(--chat-text)' } 
-                                                                : { color: 'var(--chat-text-secondary)' }
-                                                        }
-                                                        onClick={() => selectCommandSuggestion(index)}
-                                                        initial={{ opacity: 0 }}
-                                                        animate={{ opacity: 1 }}
-                                                        transition={{ delay: index * 0.03 }}
-                                                    >
-                                                        <div className="w-5 h-5 flex items-center justify-center" style={{ color: 'var(--chat-text-muted)' }}>
-                                                            {suggestion.icon}
-                                                        </div>
-                                                        <div className="font-medium">{suggestion.label}</div>
-                                                        <div className="text-xs ml-1" style={{ color: 'var(--chat-text-muted)' }}>
-                                                            {suggestion.prefix}
-                                                        </div>
-                                                    </motion.div>
-                                                ))}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-
-                                <div className="p-3">
-                                    <Textarea
-                                        ref={textareaRef}
-                                        value={value}
-                                        onChange={(e) => {
-                                            setValue(e.target.value);
-                                            adjustHeight();
-                                        }}
-                                        onKeyDown={handleKeyDown}
-                                        onFocus={() => setInputFocused(true)}
-                                        onBlur={() => setInputFocused(false)}
-                                        placeholder="Ask SB Brain a question..."
-                                        containerClassName="w-full"
-                                        className={cn(
-                                            "w-full px-4 py-2",
-                                            "resize-none",
-                                            "bg-transparent",
-                                            "border-none",
-                                            "text-sm",
-                                            "focus:outline-none",
-                                            "min-h-[36px]",
-                                            "custom-scrollbar"
-                                        )}
-                                        style={{ color: 'var(--input-text)' }}
-                                        showRing={false}
-                                    />
-                                </div>
-
-                                <AnimatePresence>
-                                    {attachments.length > 0 && (
-                                        <motion.div 
-                                            className="px-4 pb-3 flex gap-2 flex-wrap"
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: "auto" }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                        >
-                                            {attachments.map((file, index) => (
-                                                <motion.div
-                                                    key={index}
-                                                    className="flex items-center gap-2 text-xs py-1.5 px-3 rounded-lg"
-                                                    style={{ background: 'var(--sidebar-hover)', color: 'var(--chat-text-secondary)' }}
-                                                    initial={{ opacity: 0, scale: 0.9 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    exit={{ opacity: 0, scale: 0.9 }}
-                                                >
-                                                    <span>{file}</span>
-                                                    <button 
-                                                        onClick={() => removeAttachment(index)}
-                                                        className="transition-colors hover:opacity-80"
-                                                        style={{ color: 'var(--chat-text-muted)' }}
-                                                    >
-                                                        <XIcon className="w-3 h-3" />
-                                                    </button>
-                                                </motion.div>
-                                            ))}
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-
-                                <div className="p-3 border-t flex items-center justify-between gap-4" style={{ borderColor: 'var(--input-border)' }}>
-                                    <div className="flex items-center gap-2">
-                                        <motion.button
-                                            type="button"
-                                            data-command-button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setShowCommandPalette(prev => !prev);
-                                            }}
-                                            whileTap={{ scale: 0.94 }}
-                                            className={cn(
-                                                "p-2 rounded-lg transition-colors relative group",
-                                                showCommandPalette ? "font-medium" : "hover:opacity-80"
-                                            )}
-                                            style={showCommandPalette ? { background: 'var(--sidebar-hover)', color: 'var(--chat-text)' } : { color: 'var(--chat-text-secondary)' }}
-                                        >
-                                            <Command className="w-4 h-4" />
-                                            <motion.span
-                                                className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                                                style={{ background: 'var(--sidebar-hover)' }}
-                                                layoutId="button-highlight"
-                                            />
-                                        </motion.button>
-                                    </div>
-                                    
-                                    <motion.button
-                                        type="button"
-                                        onClick={handleSendMessage}
-                                        whileHover={{ scale: 1.01 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        disabled={isTyping || !value.trim()}
-                                        className="px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
-                                        style={
-                                            value.trim() && !isTyping
-                                                ? { background: 'var(--btn-primary-bg)', color: 'var(--btn-primary-text)' }
-                                                : { background: 'var(--sidebar-hover)', color: 'var(--chat-text-muted)' }
-                                        }
-                                    >
-                                        {isTyping ? (
-                                            <LoaderIcon className="w-4 h-4 animate-[spin_2s_linear_infinite]" />
-                                        ) : (
-                                            <SendIcon className="w-4 h-4" />
-                                        )}
-                                        <span>Send</span>
-                                    </motion.button>
-                                </div>
-                            </motion.div>
-                        </motion.div>
-
-                        {/* Suggestions */}
-                        <AnimatePresence>
-                            {messages.length === 0 && (
-                                <motion.div
-                                    initial={{ opacity: 1, height: "auto", scale: 1 }}
-                                    exit={{ opacity: 0, height: 0, scale: 0.95, overflow: "hidden", marginTop: 0 }}
-                                    transition={{ duration: 0.4, ease: "easeInOut" }}
-                                    className="flex flex-wrap items-center justify-center gap-2 mt-4 shrink-0"
-                                >
-                                    {commandSuggestions.map((suggestion, index) => (
-                                        <motion.button
-                                            key={suggestion.prefix}
-                                            onClick={() => selectCommandSuggestion(index)}
-                                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-all relative group"
-                                            style={{ background: 'var(--btn-secondary-bg)', color: 'var(--btn-secondary-text)', border: '1px solid var(--btn-secondary-border)' }}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: index * 0.1 }}
-                                        >
-                                            {suggestion.icon}
-                                            <span style={{ color: 'var(--chat-text)' }}>{suggestion.label}</span>
-                                            <motion.div
-                                                className="absolute inset-0 rounded-lg"
-                                                style={{ border: '1px solid var(--sidebar-border)' }}
-                                                initial={false}
-                                                animate={{
-                                                    opacity: [0, 1],
-                                                    scale: [0.98, 1],
-                                                }}
-                                                transition={{
-                                                    duration: 0.3,
-                                                    ease: "easeOut",
-                                                }}
-                                            />
-                                        </motion.button>
-                                    ))}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </motion.div>
-                </div>
-            </div>
-
-
-
-            {/* Mouse movement gradient glow following cursor */}
-            {inputFocused && theme === 'dark' && (
-                <motion.div 
-                    className="fixed w-[50rem] h-[50rem] rounded-full pointer-events-none z-0 opacity-[0.015] blur-[96px]"
-                    style={{ background: 'var(--glow-1)' }}
-                    animate={{
-                        x: mousePosition.x - 400,
-                        y: mousePosition.y - 400,
-                    }}
-                    transition={{
-                        type: "spring",
-                        damping: 25,
-                        stiffness: 150,
-                        mass: 0.5,
-                    }}
-                />
-            )}
+            </main>
         </div>
     );
 }
