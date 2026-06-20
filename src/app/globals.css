@@ -569,13 +569,13 @@ body{
 }
 
 .sbb-chat-user-msg{
-  background:var(--panel);
-  color:var(--ink);
-  border-radius:14px 14px 4px 14px;
-  padding:11px 16px;
-  font-size:0.92rem;
+  background:#F3F4F6;
+  color:#1F2937;
+  border-radius:18px;
+  padding:12px 20px;
+  font-size:0.95rem;
   margin-left:auto;
-  margin-bottom:18px;
+  margin-bottom:24px;
   max-width:80%;
   width:fit-content;
 }
@@ -595,13 +595,13 @@ body{
 }
 
 .sbb-chat-response{
-  background:#fff;
-  border:1px solid var(--line);
-  border-radius:14px;
-  padding:18px 20px;
-  font-size:0.92rem;
-  line-height:1.65;
+  background:transparent;
+  border:none;
+  padding:12px 0;
+  font-size:0.95rem;
+  line-height:1.6;
   color:var(--ink);
+  margin-bottom:24px;
 }
 .sbb-chat-response .resp-avatar{
   width:26px;height:26px;
@@ -614,15 +614,16 @@ body{
 .sbb-chat-response .resp-head{
   display:flex;
   align-items:center;
-  font-family:'JetBrains Mono',monospace;
-  font-size:0.7rem;
-  letter-spacing:0.05em;
-  text-transform:uppercase;
-  color:var(--ink-soft);
-  margin-bottom:10px;
+  font-family:'Inter', sans-serif;
+  font-size:0.85rem;
+  font-weight:600;
+  color:var(--ink);
+  margin-bottom:12px;
 }
-.sbb-chat-response p{ margin-bottom:10px; }
+.sbb-chat-response p{ margin-bottom:14px; }
 .sbb-chat-response p:last-child{ margin-bottom:0; }
+.sbb-chat-response a{ color:#2563EB; text-decoration:none; word-break:break-all; }
+.sbb-chat-response a:hover{ text-decoration:underline; }
 
 /* bottom-docked input bar, shown once a chat has started */
 .sbb-input-dock{

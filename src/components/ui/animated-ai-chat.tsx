@@ -1203,12 +1203,7 @@ export function AnimatedAIChat() {
                                     )
                                 ))}
                                 
-                                {isPending && (
-                                    <div className="sbb-chat-loading">
-                                        <div className="spinner-border" role="status"></div>
-                                        <span>Social Business Brain is thinking…</span>
-                                    </div>
-                                )}
+                                {isPending && <ThinkingAnimation />}
                                 <div ref={messagesEndRef} />
                             </div>
                         </div>
@@ -1293,6 +1288,35 @@ const rippleKeyframes = `
   100% { transform: scale(2); opacity: 0; }
 }
 `;
+
+function ThinkingAnimation() {
+    const [statusText, setStatusText] = useState("Social Business Brain is thinking...");
+    
+    useEffect(() => {
+        const phrases = [
+            "Querying database...",
+            "Analyzing sources...",
+            "Reviewing models...",
+            "Formulating response...",
+            "Social Business Brain is thinking..."
+        ];
+        
+        let i = 0;
+        const interval = setInterval(() => {
+            i = (i + 1) % phrases.length;
+            setStatusText(phrases[i]);
+        }, 1500);
+        
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <div className="sbb-chat-loading">
+            <div className="spinner-border" role="status"></div>
+            <span>{statusText}</span>
+        </div>
+    );
+}
 
 if (typeof document !== 'undefined') {
     const style = document.createElement('style');
