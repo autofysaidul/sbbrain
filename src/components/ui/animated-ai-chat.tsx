@@ -923,7 +923,7 @@ export function AnimatedAIChat() {
                 onClick={() => setIsSidebarOpen(false)}
             ></div>
 
-            {/* SIDEBAR */}
+            {/* ===================== SIDEBAR ===================== */}
             <aside className={`sbb-sidebar ${isSidebarOpen ? 'show' : ''}`} id="sbbSidebar">
                 <div className="sbb-sidebar-head mb-1">
                     <div className="d-flex align-items-center gap-2">
@@ -944,21 +944,63 @@ export function AnimatedAIChat() {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     Ask the Brain
                 </button>
+                <button type="button" className="sbb-nav-link" data-feature="validator">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M3 9h18" stroke="currentColor" strokeWidth="2"/></svg>
+                    SB Validator
+                </button>
+                <button type="button" className="sbb-nav-link" data-feature="canvas">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.2" stroke="currentColor" strokeWidth="2"/><path d="M5 20c0-3.5 3.1-6 7-6s7 2.5 7 6" stroke="currentColor" strokeWidth="2"/></svg>
+                    SB Canvas
+                </button>
+                <button type="button" className="sbb-nav-link" data-feature="kpi">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke="currentColor" strokeWidth="2"/></svg>
+                    SB KPI Engine
+                </button>
+                <button type="button" className="sbb-nav-link" data-feature="grant">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 18l-5-6 5-6M15 6l5 6-5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    SB Grant Writer
+                </button>
+                <button type="button" className="sbb-nav-link" data-feature="academy">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    SB Academy
+                </button>
 
-                <div className="sbb-nav-section-label mt-4">History</div>
-                {sessions.map(s => (
-                    <button 
-                        key={s.id} 
-                        className={`sbb-nav-link ${s.id === activeSessionId ? 'active' : ''}`} 
-                        onClick={() => { setActiveSessionId(s.id); setIsSidebarOpen(false); }}
-                        style={{ fontSize: '0.85rem' }}
-                    >
-                        {s.title}
-                    </button>
-                ))}
+                <div className="sbb-nav-section-label">Coming in Phase 2</div>
+                <a href="#" className="sbb-nav-link upcoming">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2"/><rect x="14" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2"/><rect x="3" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2"/><rect x="14" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2"/></svg>
+                    Announcements
+                    <span className="sbb-soon-pill">Soon</span>
+                </a>
+                <a href="#" className="sbb-nav-link upcoming">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 20V10M10 20V4M17 20v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                    SB News
+                    <span className="sbb-soon-pill">Soon</span>
+                </a>
+                <a href="#" className="sbb-nav-link upcoming">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke="currentColor" strokeWidth="2"/><path d="M9 7h6M9 11h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>
+                    SB Events
+                    <span className="sbb-soon-pill">Soon</span>
+                </a>
+
+                {/* Session History */}
+                {sessions.length > 0 && (
+                    <>
+                        <div className="sbb-nav-section-label">History</div>
+                        {sessions.map(s => (
+                            <button 
+                                key={s.id} 
+                                className={`sbb-nav-link ${s.id === activeSessionId ? 'active' : ''}`} 
+                                onClick={() => { setActiveSessionId(s.id); setIsSidebarOpen(false); }}
+                                style={{ fontSize: '0.85rem' }}
+                            >
+                                {s.title}
+                            </button>
+                        ))}
+                    </>
+                )}
             </aside>
 
-            {/* MAIN */}
+            {/* ===================== MAIN ===================== */}
             <main className="sbb-main">
                 <div className="sbb-topbar">
                     <div className="d-flex align-items-center gap-3">
@@ -970,6 +1012,7 @@ export function AnimatedAIChat() {
 
                     <div className="d-flex align-items-center gap-3">
                         <span className="badge rounded-pill d-none d-sm-inline-block" style={{ background: 'var(--panel)', color: 'var(--teal-deep)', fontWeight: 500 }}>Knowledge base: live</span>
+
                         <div className="dropdown">
                             <button className="sbb-user-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <span className="sbb-user-avatar">SR</span>
@@ -977,14 +1020,60 @@ export function AnimatedAIChat() {
                                     <span className="sbb-user-name d-block">Saidul Haque</span>
                                     <span className="sbb-user-role d-block">Administrator</span>
                                 </span>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="d-none d-md-inline"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                             </button>
+                            <ul className="dropdown-menu dropdown-menu-end sbb-user-menu shadow-sm">
+                                <li className="dropdown-header">Signed in as</li>
+                                <li className="px-2 pb-2">
+                                    <div className="sbb-user-name">Saidul Haque</div>
+                                    <div className="sbb-user-role">autofysaidul@gmail.com</div>
+                                </li>
+                                <li><hr /></li>
+                                <li>
+                                    <a className="dropdown-item" href="#">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.2" stroke="currentColor" strokeWidth="2"/><path d="M5 20c0-3.5 3.1-6 7-6s7 2.5 7 6" stroke="currentColor" strokeWidth="2"/></svg>
+                                        Profile
+                                    </a>
+                                </li>
+                                <li>
+                                    <a className="dropdown-item" href="#">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M3 9h18" stroke="currentColor" strokeWidth="2"/></svg>
+                                        Account info
+                                    </a>
+                                </li>
+                                <li>
+                                    <a className="dropdown-item" href="#">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" strokeWidth="2"/><path d="M19.4 13a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V19a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H4a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h0a1.65 1.65 0 001-1.51V4a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h0a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v0a1.65 1.65 0 001.51 1H20a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" strokeWidth="1.6"/></svg>
+                                        Preferences
+                                    </a>
+                                </li>
+                                <li>
+                                    <a className="dropdown-item" href="#">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 17a2 2 0 002-2v-3a2 2 0 10-4 0v3a2 2 0 002 2z" stroke="currentColor" strokeWidth="2"/><path d="M5 9V7a7 7 0 1114 0v2" stroke="currentColor" strokeWidth="2"/><rect x="4" y="9" width="16" height="11" rx="2" stroke="currentColor" strokeWidth="2"/></svg>
+                                        Privacy &amp; data
+                                    </a>
+                                </li>
+                                <li><hr /></li>
+                                <li>
+                                    <a className="dropdown-item" href="#">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><path d="M9.5 9.5a2.5 2.5 0 115 0c0 1.6-2.5 1.9-2.5 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="12" cy="17" r="0.6" fill="currentColor"/></svg>
+                                        Help &amp; support
+                                    </a>
+                                </li>
+                                <li>
+                                    <a className="dropdown-item danger" href="#">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                        Log out
+                                    </a>
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
 
                 {messages.length === 0 ? (
                     <>
-                        {/* HERO */}
+                        {/* HERO (hidden once a question is asked) */}
                         <section className="sbb-hero" id="sbbHero">
                             <div className="sbb-avatar-ring">
                                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
@@ -995,7 +1084,7 @@ export function AnimatedAIChat() {
                             <p className="lead-sub">One knowledge base. Every concept, model, case study, and event — answered in one place.</p>
 
                             <div className="sbb-convergence" aria-hidden="true">
-                                <span className="conv-tag t1">news & media</span>
+                                <span className="conv-tag t1">news &amp; media</span>
                                 <span className="conv-tag t2">events</span>
                                 <span className="conv-tag t3">sb world</span>
                                 <span className="conv-tag t4">sb wiki</span>
@@ -1031,11 +1120,7 @@ export function AnimatedAIChat() {
                                             Auto Model
                                         </button>
                                     </div>
-                                    <button 
-                                        className="sbb-send-btn" 
-                                        onClick={() => handleSendMessage()} 
-                                        disabled={isPending || !value.trim()}
-                                    >
+                                    <button className="sbb-send-btn" onClick={() => handleSendMessage()} disabled={isPending || !value.trim()} aria-label="Send">
                                         {isPending ? <div className="spinner-border spinner-border-sm" /> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                     </button>
                                 </div>
@@ -1046,9 +1131,9 @@ export function AnimatedAIChat() {
                                     <button 
                                         key={idx} 
                                         className="sbb-topic-pill sbb-topic-pill-btn"
-                                        onClick={() => {
-                                            setValue(cmd.label);
-                                            setTimeout(() => handleSendMessage(cmd.label), 50);
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            handleSendMessage(cmd.label);
                                         }}
                                     >
                                         <span className="dot" style={idx % 2 !== 0 ? { background: 'var(--gold)' } : {}}></span>
@@ -1058,7 +1143,7 @@ export function AnimatedAIChat() {
                             </div>
                         </section>
 
-                        {/* TRENDING SB NEWS */}
+                        {/* TRENDING SB NEWS (hidden once a question is asked) */}
                         <section className="sbb-phase2" id="sbbNewsSection">
                             <div className="sbb-phase2-head">
                                 <h2 className="font-display">Trending SB News</h2>
@@ -1066,7 +1151,7 @@ export function AnimatedAIChat() {
                             </div>
                             <div className="row g-3">
                                 <div className="col-md-6 col-lg-4">
-                                    <a href="#" className="news-card">
+                                    <a href="/news" className="news-card">
                                         <span className="news-tag">News</span>
                                         <h3>Grameen Nobin entrepreneurs cross 500 active ventures milestone</h3>
                                         <p>A look at how grassroots social businesses are scaling across rural Bangladesh this quarter.</p>
@@ -1074,7 +1159,7 @@ export function AnimatedAIChat() {
                                     </a>
                                 </div>
                                 <div className="col-md-6 col-lg-4">
-                                    <a href="#" className="news-card">
+                                    <a href="/events" className="news-card">
                                         <span className="news-tag">Event</span>
                                         <h3>Social Business Day 2026: registrations now open</h3>
                                         <p>Speakers, sessions, and workshops confirmed for this year&apos;s flagship gathering.</p>
@@ -1082,7 +1167,7 @@ export function AnimatedAIChat() {
                                     </a>
                                 </div>
                                 <div className="col-md-6 col-lg-4">
-                                    <a href="#" className="news-card">
+                                    <a href="/sb-academia" className="news-card">
                                         <span className="news-tag">Academia</span>
                                         <h3>New research paper on the Yunus Social Business Model published</h3>
                                         <p>Fresh academic analysis on applying the seven principles in emerging markets.</p>
@@ -1091,7 +1176,8 @@ export function AnimatedAIChat() {
                                 </div>
                             </div>
                         </section>
-                        
+
+                        {/* FOOTER (hidden once a question is asked) */}
                         <footer className="sbb-footer" id="sbbFooter">
                             <div className="d-flex align-items-center gap-2 mb-3">
                                 <div className="sbb-logo-mark" style={{ width: '28px', height: '28px' }}>
@@ -1103,16 +1189,16 @@ export function AnimatedAIChat() {
                             <p style={{ color: '#C77E96', maxWidth: '680px' }}>Built on the Social Business Pedia knowledge base. Continuously updated as new sessions, speakers, and case studies are added.</p>
 
                             <div className="sbb-footer-bottom">
-                                <span>© 2026 Social Business Pedia — Social Impact Hub</span>
+                                <span>&copy; 2026 Social Business Pedia — Social Impact Hub</span>
                                 <a href="https://autofysolutions.com" target="_blank" rel="noopener noreferrer" className="sbb-credit-link">
-                                    Developed by Autofy Solutions — empowering grassroots entrepreneurs through technology, systemization & education
+                                    Developed by Autofy Solutions — empowering grassroots entrepreneurs through technology, systemization &amp; education
                                 </a>
                             </div>
                         </footer>
                     </>
                 ) : (
                     <>
-                        {/* CHAT AREA */}
+                        {/* CHAT / RESPONSE AREA (shown once a question is asked) */}
                         <div className="sbb-chat-area show" id="sbbChatArea">
                             <div className="sbb-chat-inner" id="sbbChatInner">
                                 {messages.map((msg) => (
@@ -1128,7 +1214,7 @@ export function AnimatedAIChat() {
                                                 </span>
                                                 Social Business Brain
                                             </div>
-                                            <div className="prose prose-sm max-w-none text-[var(--ink)]">
+                                            <div className="prose prose-sm max-w-none" style={{ color: 'var(--ink)' }}>
                                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                                     {preprocessMarkdown(msg.content)}
                                                 </ReactMarkdown>
@@ -1139,7 +1225,7 @@ export function AnimatedAIChat() {
                                 
                                 {isPending && (
                                     <div className="sbb-chat-loading">
-                                        <div className="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                                        <div className="spinner-border" role="status"></div>
                                         <span>Social Business Brain is thinking…</span>
                                     </div>
                                 )}
@@ -1147,7 +1233,7 @@ export function AnimatedAIChat() {
                             </div>
                         </div>
 
-                        {/* BOTTOM-DOCKED INPUT */}
+                        {/* BOTTOM-DOCKED INPUT (shown once a question is asked) */}
                         <div className="sbb-input-dock" id="sbbInputDock">
                             <div className="sbb-input-card">
                                 <textarea 
@@ -1177,11 +1263,7 @@ export function AnimatedAIChat() {
                                             Auto Model
                                         </button>
                                     </div>
-                                    <button 
-                                        className="sbb-send-btn" 
-                                        onClick={() => handleSendMessage()}
-                                        disabled={isPending || !value.trim()}
-                                    >
+                                    <button className="sbb-send-btn" onClick={() => handleSendMessage()} disabled={isPending || !value.trim()} aria-label="Send">
                                         {isPending ? <div className="spinner-border spinner-border-sm" /> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                     </button>
                                 </div>
