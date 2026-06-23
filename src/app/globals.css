@@ -303,7 +303,9 @@ body{
   background:rgba(20,8,14,0.42);
   z-index:1040;
 }
-.sbb-sidebar-overlay.show{ display:block; }
+@media (max-width: 991px) {
+  .sbb-sidebar-overlay.show{ display:block; }
+}
 
 /* ---------- Main ---------- */
 .sbb-main{
@@ -777,10 +779,12 @@ body{
 
 /* --- Thinking timer --- */
 .sbb-thinking-timer{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
   font-family:'JetBrains Mono',monospace;
-  font-size:0.78rem;
-  color:var(--teal-deep);
-  font-weight:600;
+  font-size:0.72rem;
+  color:var(--ink-soft);
   margin-left:auto;
 }
 

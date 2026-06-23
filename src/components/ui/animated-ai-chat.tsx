@@ -1264,7 +1264,7 @@ export function AnimatedAIChat() {
                                     )
                                 ))}
                                 
-                                {isSending && <ThinkingAnimation elapsedSeconds={elapsedSeconds} />}
+                                {isSending && <ThinkingAnimation startTime={sendTimestampRef.current} />}
                                 <div ref={messagesEndRef} />
                             </div>
                         </div>
@@ -1350,8 +1350,9 @@ const rippleKeyframes = `
 }
 `;
 
-function ThinkingAnimation({ elapsedSeconds }: { elapsedSeconds: number }) {
+function ThinkingAnimation({ startTime }: { startTime: number }) {
     const [statusText, setStatusText] = useState("Thinking...");
+    const [elapsed, setElapsed] = useState("0.0");
     
     useEffect(() => {
         const phrases = [
@@ -1363,19 +1364,29 @@ function ThinkingAnimation({ elapsedSeconds }: { elapsedSeconds: number }) {
         ];
         
         let i = 0;
-        const interval = setInterval(() => {
+        const textInterval = setInterval(() => {
             i = (i + 1) % phrases.length;
             setStatusText(phrases[i]);
         }, 1500);
+
+        const timerInterval = setInterval(() => {
+            if (startTime > 0) {
+                const currentElapsed = (Date.now() - startTime) / 1000;
+                setElapsed(currentElapsed.toFixed(1));
+            }
+        }, 100);
         
-        return () => clearInterval(interval);
-    }, []);
+        return () => {
+            clearInterval(textInterval);
+            clearInterval(timerInterval);
+        };
+    }, [startTime]);
 
     return (
         <div className="sbb-chat-loading">
             <div className="spinner-border" role="status"></div>
             <span>{statusText}</span>
-            <span className="sbb-thinking-timer">{elapsedSeconds}s</span>
+            <span className="sbb-thinking-timer">{elapsed}s</span>
         </div>
     );
 }
