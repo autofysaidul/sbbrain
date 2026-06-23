@@ -899,12 +899,12 @@ export function AnimatedAIChat() {
         <div className="d-flex h-full w-full overflow-hidden">
             {/* Mobile overlay */}
             <div 
-                className={`sbb-sidebar-overlay ${isSidebarOpen ? 'show' : ''}`} 
+                className={`sbb-sidebar-overlay ${isSidebarOpen ? '' : ''}`} 
                 onClick={() => setIsSidebarOpen(false)}
             ></div>
 
             {/* ===================== SIDEBAR ===================== */}
-            <aside className={`sbb-sidebar ${isSidebarOpen ? 'show' : ''}`} id="sbbSidebar">
+            <aside  className={`sbb-sidebar ${isSidebarOpen ? "show" : ""}`}  id="sbbSidebar" >
                 <div className="sbb-sidebar-head mb-1">
                     <div className="d-flex align-items-center gap-2">
                         <div className="sbb-logo-mark">
@@ -924,7 +924,26 @@ export function AnimatedAIChat() {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     Ask the Brain
                 </button>
-                <button type="button" className="sbb-nav-link" data-feature="validator">
+               
+ {/* Session History */}
+                {sessions.length > 0 && (
+                    <>
+                        <div className="sbb-nav-section-label">History</div>
+                        {sessions.map(s => (
+                            <button 
+                                key={s.id} 
+                                className={`sbb-nav-link ${s.id === activeSessionId ? 'active' : ''}`} 
+                                onClick={() => { setActiveSessionId(s.id); setIsSidebarOpen(false); }}
+                                style={{ fontSize: '0.85rem' }}
+                            >
+                                {s.title}
+                            </button>
+                        ))}
+                    </>
+                )}
+                <div className="sbb-nav-section-label">Coming in Phase 2</div>
+
+                  <button type="button" className="sbb-nav-link" data-feature="validator">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M3 9h18" stroke="currentColor" strokeWidth="2"/></svg>
                     SB Validator
                 </button>
@@ -944,8 +963,6 @@ export function AnimatedAIChat() {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     SB Academy
                 </button>
-
-                <div className="sbb-nav-section-label">Coming in Phase 2</div>
                 <a href="#" className="sbb-nav-link upcoming">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2"/><rect x="14" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2"/><rect x="3" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2"/><rect x="14" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2"/></svg>
                     Announcements
@@ -962,22 +979,7 @@ export function AnimatedAIChat() {
                     <span className="sbb-soon-pill">Soon</span>
                 </a>
 
-                {/* Session History */}
-                {sessions.length > 0 && (
-                    <>
-                        <div className="sbb-nav-section-label">History</div>
-                        {sessions.map(s => (
-                            <button 
-                                key={s.id} 
-                                className={`sbb-nav-link ${s.id === activeSessionId ? 'active' : ''}`} 
-                                onClick={() => { setActiveSessionId(s.id); setIsSidebarOpen(false); }}
-                                style={{ fontSize: '0.85rem' }}
-                            >
-                                {s.title}
-                            </button>
-                        ))}
-                    </>
-                )}
+                
             </aside>
 
             {/* ===================== MAIN ===================== */}
@@ -1124,7 +1126,7 @@ export function AnimatedAIChat() {
                         </section>
 
                         {/* TRENDING SB NEWS (hidden once a question is asked) */}
-                        <section className="sbb-phase2" id="sbbNewsSection">
+                        {/* <section className="sbb-phase2" id="sbbNewsSection">
                             <div className="sbb-phase2-head">
                                 <h2 className="font-display">Trending SB News</h2>
                                 <span className="eyebrow">From Social Business Pedia</span>
@@ -1155,7 +1157,7 @@ export function AnimatedAIChat() {
                                     </a>
                                 </div>
                             </div>
-                        </section>
+                        </section> */}
 
                         {/* FOOTER (hidden once a question is asked) */}
                         <footer className="sbb-footer" id="sbbFooter">
