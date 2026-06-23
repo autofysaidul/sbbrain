@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useState, useTransition } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
     ImageIcon,
@@ -254,7 +254,7 @@ export function AnimatedAIChat() {
     const [value, setValue] = useState("");
     const [attachments, setAttachments] = useState<string[]>([]);
     const [isTyping, setIsTyping] = useState(false);
-    const [isPending, startTransition] = useTransition();
+    const [isSending, setIsSending] = useState(false);
     const [activeSuggestion, setActiveSuggestion] = useState<number>(-1);
     const [showCommandPalette, setShowCommandPalette] = useState(false);
     const [recentCommand, setRecentCommand] = useState<string | null>(null);
@@ -719,65 +719,75 @@ export function AnimatedAIChat() {
             };
             setMessages(prev => [...prev, tempUserMsg]);
             setIsTyping(true);
+            setIsSending(true);
             startTimer();
 
-            startTransition(async () => {
-                try {
-                    const response = await fetch("/api/chat", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({ 
-                            message: messageToSend,
-                            sessionId: currentSessionId,
-                            clientId
-                        }),
-                    });
+            // Direct async fetch with AbortController timeout (no startTransition!)
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout
 
-                    const responseTime = stopTimer();
+            try {
+                const response = await fetch("/api/chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ 
+                        message: messageToSend,
+                        sessionId: currentSessionId,
+                        clientId
+                    }),
+                    signal: controller.signal,
+                });
 
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.reply) {
-                            // Update history with the saved assistant reply, and swap temp user msg
-                            setMessages(prev => {
-                                const listWithoutTemp = prev.filter(m => m.id !== tempUserMsg.id);
-                                return [
-                                    ...listWithoutTemp,
-                                    { ...tempUserMsg, id: `msg-user-${Date.now()}` },
-                                    { ...data.reply, responseTime }
-                                ];
-                            });
-                        }
-                    } else {
-                        // Display error bubble
-                        setMessages(prev => [
-                            ...prev,
-                            {
-                                id: `error-${Date.now()}`,
-                                timestamp: new Date().toISOString(),
-                                role: "assistant",
-                                content: "Unable to retrieve response. Check console or backend logs.",
-                            }
-                        ]);
+                clearTimeout(timeoutId);
+                const responseTime = stopTimer();
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.reply) {
+                        // Update history with the saved assistant reply, and swap temp user msg
+                        setMessages(prev => {
+                            const listWithoutTemp = prev.filter(m => m.id !== tempUserMsg.id);
+                            return [
+                                ...listWithoutTemp,
+                                { ...tempUserMsg, id: `msg-user-${Date.now()}` },
+                                { ...data.reply, responseTime }
+                            ];
+                        });
                     }
-                } catch (error) {
-                    stopTimer();
-                    console.error("Error sending message:", error);
+                } else {
+                    // Display error bubble
                     setMessages(prev => [
                         ...prev,
                         {
                             id: `error-${Date.now()}`,
                             timestamp: new Date().toISOString(),
                             role: "assistant",
-                            content: "Network error occurred. Please verify backend is running.",
+                            content: "Unable to retrieve response. Check console or backend logs.",
                         }
                     ]);
-                } finally {
-                    setIsTyping(false);
                 }
-            });
+            } catch (error: any) {
+                clearTimeout(timeoutId);
+                stopTimer();
+                const isTimeout = error?.name === 'AbortError';
+                console.error("Error sending message:", error);
+                setMessages(prev => [
+                    ...prev,
+                    {
+                        id: `error-${Date.now()}`,
+                        timestamp: new Date().toISOString(),
+                        role: "assistant",
+                        content: isTimeout 
+                            ? "Request timed out. The server took too long to respond. Please try again."
+                            : "Network error occurred. Please verify backend is running.",
+                    }
+                ]);
+            } finally {
+                setIsTyping(false);
+                setIsSending(false);
+            }
         }
     };
 
@@ -841,58 +851,67 @@ export function AnimatedAIChat() {
         // Truncate messages in local state from this assistant message onwards
         setMessages(prev => prev.slice(0, index));
         setIsTyping(true);
+        setIsSending(true);
         startTimer();
 
-        startTransition(async () => {
-            try {
-                const response = await fetch("/api/chat", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ 
-                        message: precedingMsg.content,
-                        sessionId: activeSessionId,
-                        regenerate: true,
-                        assistantMessageId: msgId,
-                        clientId
-                    }),
-                });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000);
 
-                const responseTime = stopTimer();
+        try {
+            const response = await fetch("/api/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ 
+                    message: precedingMsg.content,
+                    sessionId: activeSessionId,
+                    regenerate: true,
+                    assistantMessageId: msgId,
+                    clientId
+                }),
+                signal: controller.signal,
+            });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.reply) {
-                        setMessages(prev => [...prev, { ...data.reply, responseTime }]);
-                    }
-                } else {
-                    setMessages(prev => [
-                        ...prev,
-                        {
-                            id: `error-${Date.now()}`,
-                            timestamp: new Date().toISOString(),
-                            role: "assistant",
-                            content: "Unable to regenerate response. Check backend logs.",
-                        }
-                    ]);
+            clearTimeout(timeoutId);
+            const responseTime = stopTimer();
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.reply) {
+                    setMessages(prev => [...prev, { ...data.reply, responseTime }]);
                 }
-            } catch (error) {
-                stopTimer();
-                console.error("Error regenerating response:", error);
+            } else {
                 setMessages(prev => [
                     ...prev,
                     {
                         id: `error-${Date.now()}`,
                         timestamp: new Date().toISOString(),
                         role: "assistant",
-                        content: "Network error occurred during regeneration.",
+                        content: "Unable to regenerate response. Check backend logs.",
                     }
                 ]);
-            } finally {
-                setIsTyping(false);
             }
-        });
+        } catch (error: any) {
+            clearTimeout(timeoutId);
+            stopTimer();
+            const isTimeout = error?.name === 'AbortError';
+            console.error("Error regenerating response:", error);
+            setMessages(prev => [
+                ...prev,
+                {
+                    id: `error-${Date.now()}`,
+                    timestamp: new Date().toISOString(),
+                    role: "assistant",
+                    content: isTimeout
+                        ? "Regeneration timed out. Please try again."
+                        : "Network error occurred during regeneration.",
+                }
+            ]);
+        } finally {
+            setIsTyping(false);
+            setIsSending(false);
+        }
     };
 
     return (
@@ -1085,7 +1104,7 @@ export function AnimatedAIChat() {
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && !e.shiftKey) {
                                             e.preventDefault();
-                                            if (value.trim() && !isPending) handleSendMessage();
+                                            if (value.trim() && !isSending) handleSendMessage();
                                         }
                                     }}
                                 />
@@ -1100,8 +1119,8 @@ export function AnimatedAIChat() {
                                             Auto Model
                                         </button>
                                     </div>
-                                    <button className="sbb-send-btn" onClick={() => handleSendMessage()} disabled={isPending || !value.trim()} aria-label="Send">
-                                        {isPending ? <div className="spinner-border spinner-border-sm" /> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                    <button className="sbb-send-btn" onClick={() => handleSendMessage()} disabled={isSending || !value.trim()} aria-label="Send">
+                                        {isSending ? <div className="spinner-border spinner-border-sm" /> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                     </button>
                                 </div>
                             </div>
@@ -1199,11 +1218,53 @@ export function AnimatedAIChat() {
                                                     {preprocessMarkdown(msg.content)}
                                                 </ReactMarkdown>
                                             </div>
+                                            {/* Response time + Action buttons */}
+                                            <div className="sbb-response-actions">
+                                                {msg.responseTime && (
+                                                    <span className="sbb-response-time">
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                                                        {msg.responseTime}s
+                                                    </span>
+                                                )}
+                                                <button 
+                                                    className="sbb-action-btn" 
+                                                    onClick={() => handleCopy(msg.content, msg.id)}
+                                                    title="Copy"
+                                                >
+                                                    {copiedId === msg.id ? (
+                                                        <><Check className="w-3.5 h-3.5" /> Copied</>
+                                                    ) : (
+                                                        <><Copy className="w-3.5 h-3.5" /> Copy</>
+                                                    )}
+                                                </button>
+                                                <button 
+                                                    className="sbb-action-btn" 
+                                                    onClick={() => handleRegenerate(msg.id)}
+                                                    disabled={isSending}
+                                                    title="Regenerate"
+                                                >
+                                                    <RotateCw className="w-3.5 h-3.5" /> Retry
+                                                </button>
+                                                <button 
+                                                    className={`sbb-action-btn ${ratings[msg.id] === 'like' ? 'active' : ''}`}
+                                                    onClick={() => handleRate(msg.id, 'like')}
+                                                    title="Good response"
+                                                >
+                                                    <ThumbsUp className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button 
+                                                    className={`sbb-action-btn ${ratings[msg.id] === 'dislike' ? 'active' : ''}`}
+                                                    onClick={() => handleRate(msg.id, 'dislike')}
+                                                    title="Bad response"
+                                                >
+                                                    <ThumbsDown className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
                                         </div>
                                     )
                                 ))}
                                 
-                                {isPending && <ThinkingAnimation />}
+                                {isSending && <ThinkingAnimation elapsedSeconds={elapsedSeconds} />}
                                 <div ref={messagesEndRef} />
                             </div>
                         </div>
@@ -1223,7 +1284,7 @@ export function AnimatedAIChat() {
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && !e.shiftKey) {
                                             e.preventDefault();
-                                            if (value.trim() && !isPending) handleSendMessage();
+                                            if (value.trim() && !isSending) handleSendMessage();
                                         }
                                     }}
                                 />
@@ -1238,8 +1299,8 @@ export function AnimatedAIChat() {
                                             Auto Model
                                         </button>
                                     </div>
-                                    <button className="sbb-send-btn" onClick={() => handleSendMessage()} disabled={isPending || !value.trim()} aria-label="Send">
-                                        {isPending ? <div className="spinner-border spinner-border-sm" /> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                                    <button className="sbb-send-btn" onClick={() => handleSendMessage()} disabled={isSending || !value.trim()} aria-label="Send">
+                                        {isSending ? <div className="spinner-border spinner-border-sm" /> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                                     </button>
                                 </div>
                             </div>
@@ -1289,16 +1350,16 @@ const rippleKeyframes = `
 }
 `;
 
-function ThinkingAnimation() {
-    const [statusText, setStatusText] = useState("Social Business Brain is thinking...");
+function ThinkingAnimation({ elapsedSeconds }: { elapsedSeconds: number }) {
+    const [statusText, setStatusText] = useState("Thinking...");
     
     useEffect(() => {
         const phrases = [
             "Querying database...",
             "Analyzing sources...",
-            "Reviewing models...",
+            "Reviewing context...",
             "Formulating response...",
-            "Social Business Brain is thinking..."
+            "Thinking..."
         ];
         
         let i = 0;
@@ -1314,6 +1375,7 @@ function ThinkingAnimation() {
         <div className="sbb-chat-loading">
             <div className="spinner-border" role="status"></div>
             <span>{statusText}</span>
+            <span className="sbb-thinking-timer">{elapsedSeconds}s</span>
         </div>
     );
 }

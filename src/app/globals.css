@@ -728,6 +728,62 @@ body{
 }
 .sbb-chat-response td{ color:#374151; }
 
+/* --- Response action buttons (Claude-like) --- */
+.sbb-response-actions{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  margin-top:12px;
+  padding-top:8px;
+  border-top:1px solid transparent;
+}
+.sbb-chat-response:hover .sbb-response-actions{
+  border-top-color:var(--line);
+}
+.sbb-response-time{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-size:0.72rem;
+  color:var(--ink-soft);
+  margin-right:8px;
+  font-family:'JetBrains Mono',monospace;
+}
+.sbb-action-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:4px 10px;
+  border:none;
+  border-radius:6px;
+  background:transparent;
+  color:var(--ink-soft);
+  font-size:0.75rem;
+  cursor:pointer;
+  transition:all 0.15s ease;
+  font-family:'Inter',sans-serif;
+}
+.sbb-action-btn:hover{
+  background:#F3F3F0;
+  color:var(--ink);
+}
+.sbb-action-btn.active{
+  color:var(--teal-deep);
+}
+.sbb-action-btn:disabled{
+  opacity:0.4;
+  cursor:not-allowed;
+}
+
+/* --- Thinking timer --- */
+.sbb-thinking-timer{
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.78rem;
+  color:var(--teal-deep);
+  font-weight:600;
+  margin-left:auto;
+}
+
 /* bottom-docked input bar, shown once a chat has started */
 .sbb-input-dock{
   border-top:1px solid var(--line);

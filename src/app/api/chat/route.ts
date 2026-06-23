@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { saveMessage, deleteMessageAndSubsequent } from '@/lib/db';
 
+// Allow up to 60 seconds for this API route (Vercel/VPS)
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   let activeSessionId = 'default-session';
   let clientId = undefined;
@@ -31,8 +34,11 @@ export async function POST(request: Request) {
       await saveMessage('user', message, activeSessionId, clientId);
     }
 
-    // 2. Forward message to external webhook
+    // 2. Forward message to external webhook with timeout
     const webhookUrl = 'https://admin.n8n.inmetech.cloud/webhook/sb';
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s timeout
     
     const response = await fetch(webhookUrl, {
       method: 'POST',
@@ -46,7 +52,10 @@ export async function POST(request: Request) {
         sender: 'user',
         timestamp: new Date().toISOString()
       }),
+      signal: controller.signal,
     });
+    
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       throw new Error(`Webhook responded with status ${response.status}`);
